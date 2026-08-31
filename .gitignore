@@ -22,3 +22,7 @@ htmlcov/
 
 # WebView2 runtime data
 **/WebView2/
+
+# ONLYOFFICE spike runtime artifacts
+acceptance/reports/onlyoffice-callbacks.jsonl
+acceptance/roundtrip/OnlyOffice-InstitutionalWorkbook.xlsx
