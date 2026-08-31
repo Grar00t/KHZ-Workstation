@@ -233,7 +233,7 @@
                 <TextBlock TextWrapping="Wrap"
                            Foreground="#666666"
                            FontSize="11"
-                           Text="Capability status describes permissions enforced by KHZ code paths. It does not claim that Windows or every external process is globally isolated."/>
+                           Text="Capability status describes permissions enforced by KHZ-managed code paths. A user terminal, when explicitly session-enabled, runs commands under the signed-in Windows account and is not a KHZ sandbox; those commands may access files, start processes, or use network access permitted by Windows."/>
             </Border>
         </StackPanel>
     </ScrollViewer>

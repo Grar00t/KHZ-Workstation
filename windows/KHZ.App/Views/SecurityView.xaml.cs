@@ -97,12 +97,20 @@ public partial class SecurityView : UserControl
                     Capability.InstitutionalNetwork);
 
             SecurityInternetEgressText.Text =
-                CapabilityStatus(
-                    Capability.InternetEgress);
+                _policy.IsAllowed(
+                    Capability.InternetEgress)
+                    ? "Allowed"
+                    : _terminalSessionGate.IsEnabled
+                        ? "Denied to KHZ-managed clients · user terminal may use OS network"
+                        : "Denied";
 
             SecurityProcessText.Text =
-                CapabilityStatus(
-                    Capability.ArbitraryProcessExecution);
+                _policy.IsAllowed(
+                    Capability.ArbitraryProcessExecution)
+                    ? "Allowed"
+                    : _terminalSessionGate.IsEnabled
+                        ? "Denied to automation · user terminal is separate execution"
+                        : "Denied";
 
             SecurityIntegrationWriteText.Text =
                 CapabilityStatus(
