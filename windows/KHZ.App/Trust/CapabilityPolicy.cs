@@ -8,7 +8,10 @@ internal enum Capability
     LocalFileLaunch,
 
     ExternalWebNavigation,
-    ExternalNetwork,
+
+    InstitutionalNetwork,
+    InternetEgress,
+
     ArbitraryProcessExecution,
 
     IntegrationRead,

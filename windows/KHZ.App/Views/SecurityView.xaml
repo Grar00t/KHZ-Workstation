@@ -129,7 +129,8 @@
                         <RowDefinition Height="34"/>
                         <RowDefinition Height="34"/>
                         <RowDefinition Height="34"/>
-                    </Grid.RowDefinitions>
+                                        <RowDefinition Height="34"/>
+                </Grid.RowDefinitions>
 
                     <TextBlock Text="Local Office navigation"
                                VerticalAlignment="Center"/>
@@ -157,37 +158,46 @@
                                FontWeight="SemiBold"/>
 
                     <TextBlock Grid.Row="3"
-                               Text="External network capability"
+                               Text="Institutional network"
                                VerticalAlignment="Center"/>
-                    <TextBlock x:Name="SecurityExternalNetworkText"
+                    <TextBlock x:Name="SecurityInstitutionalNetworkText"
                                Grid.Row="3"
                                Grid.Column="1"
                                VerticalAlignment="Center"
                                FontWeight="SemiBold"/>
 
                     <TextBlock Grid.Row="4"
-                               Text="Arbitrary process execution"
+                               Text="Internet egress"
                                VerticalAlignment="Center"/>
-                    <TextBlock x:Name="SecurityProcessText"
+                    <TextBlock x:Name="SecurityInternetEgressText"
                                Grid.Row="4"
                                Grid.Column="1"
                                VerticalAlignment="Center"
                                FontWeight="SemiBold"/>
 
                     <TextBlock Grid.Row="5"
-                               Text="Integration write"
+                               Text="Arbitrary process execution"
                                VerticalAlignment="Center"/>
-                    <TextBlock x:Name="SecurityIntegrationWriteText"
+                    <TextBlock x:Name="SecurityProcessText"
                                Grid.Row="5"
                                Grid.Column="1"
                                VerticalAlignment="Center"
                                FontWeight="SemiBold"/>
 
                     <TextBlock Grid.Row="6"
+                               Text="Integration write"
+                               VerticalAlignment="Center"/>
+                    <TextBlock x:Name="SecurityIntegrationWriteText"
+                               Grid.Row="6"
+                               Grid.Column="1"
+                               VerticalAlignment="Center"
+                               FontWeight="SemiBold"/>
+
+                    <TextBlock Grid.Row="7"
                                Text="AI inference capability"
                                VerticalAlignment="Center"/>
                     <TextBlock x:Name="SecurityAiText"
-                               Grid.Row="6"
+                               Grid.Row="7"
                                Grid.Column="1"
                                VerticalAlignment="Center"
                                FontWeight="SemiBold"/>

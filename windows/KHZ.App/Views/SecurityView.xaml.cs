@@ -69,9 +69,13 @@ public partial class SecurityView : UserControl
                 CapabilityStatus(
                     Capability.ExternalWebNavigation);
 
-            SecurityExternalNetworkText.Text =
+            SecurityInstitutionalNetworkText.Text =
                 CapabilityStatus(
-                    Capability.ExternalNetwork);
+                    Capability.InstitutionalNetwork);
+
+            SecurityInternetEgressText.Text =
+                CapabilityStatus(
+                    Capability.InternetEgress);
 
             SecurityProcessText.Text =
                 CapabilityStatus(
