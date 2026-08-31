@@ -49,6 +49,9 @@ public partial class MainWindow : Window
     private readonly UserTerminalSessionGate _terminalSessionGate =
         new();
 
+    private readonly ITerminalRunner _terminalRunner =
+        new PowerShellTerminalRunner();
+
     private readonly CapabilityPolicy _policy =
         CapabilityPolicy.CreateInstitutionalDefault();
 
@@ -103,6 +106,12 @@ public partial class MainWindow : Window
             _repositoryInspector,
             _activity,
             _policy);
+
+        TerminalSurface.Configure(
+            _terminalRunner,
+            _activity,
+            _policy,
+            _terminalSessionGate);
 
         _clockTimer.Tick += (_, _) => UpdateClock();
 
@@ -236,6 +245,7 @@ public partial class MainWindow : Window
         IntegrationsSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
         RepositoriesSurface.Visibility = Visibility.Collapsed;
+        TerminalSurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
 
         if (OfficeWeb.CoreWebView2 is null)
@@ -271,6 +281,7 @@ public partial class MainWindow : Window
         IntegrationsSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
         RepositoriesSurface.Visibility = Visibility.Collapsed;
+        TerminalSurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
 
         OfficeWeb.Visibility = Visibility.Collapsed;
@@ -349,6 +360,7 @@ public partial class MainWindow : Window
         IntegrationsSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
         RepositoriesSurface.Visibility = Visibility.Collapsed;
+        TerminalSurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
 
         HomeSurface.Visibility = Visibility.Collapsed;
@@ -515,6 +527,7 @@ public partial class MainWindow : Window
         IntegrationsSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
         RepositoriesSurface.Visibility = Visibility.Collapsed;
+        TerminalSurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
 
         ActivitySurface.Visibility = Visibility.Visible;
@@ -540,12 +553,41 @@ public partial class MainWindow : Window
         IntegrationsSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
         RepositoriesSurface.Visibility = Visibility.Collapsed;
+        TerminalSurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
 
         SecuritySurface.Visibility = Visibility.Visible;
         SectionTitle.Text = "Security";
 
         SecuritySurface.RefreshSecurity();
+    }
+
+    private void Terminal_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        _activity.Record(
+            category: "navigation",
+            action: "terminal.open",
+            target: _currentDirectory,
+            result: "OPENED");
+
+        OfficeWeb.Visibility = Visibility.Collapsed;
+        HomeSurface.Visibility = Visibility.Collapsed;
+        FilesSurface.Visibility = Visibility.Collapsed;
+        ActivitySurface.Visibility = Visibility.Collapsed;
+        SecuritySurface.Visibility = Visibility.Collapsed;
+        IntegrationsSurface.Visibility = Visibility.Collapsed;
+        SearchSurface.Visibility = Visibility.Collapsed;
+        TasksSurface.Visibility = Visibility.Collapsed;
+        RepositoriesSurface.Visibility = Visibility.Collapsed;
+
+        TerminalSurface.SetInitialDirectory(
+            _currentDirectory);
+
+        TerminalSurface.RefreshState();
+        TerminalSurface.Visibility = Visibility.Visible;
+        SectionTitle.Text = "Terminal";
     }
 
     private void Repositories_Click(
@@ -616,6 +658,7 @@ public partial class MainWindow : Window
         IntegrationsSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
         RepositoriesSurface.Visibility = Visibility.Collapsed;
+        TerminalSurface.Visibility = Visibility.Collapsed;
 
         SearchSurface.SetRootDirectory(
             _currentDirectory);
@@ -644,6 +687,7 @@ public partial class MainWindow : Window
         SearchSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
         RepositoriesSurface.Visibility = Visibility.Collapsed;
+        TerminalSurface.Visibility = Visibility.Collapsed;
 
         IntegrationsSurface.Visibility = Visibility.Visible;
         SectionTitle.Text = "Integrations";

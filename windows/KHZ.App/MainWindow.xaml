@@ -159,6 +159,19 @@
                         </StackPanel>
                     </Button>
 
+                    <Button x:Name="TerminalButton"
+                            Style="{StaticResource NavButton}"
+                            Click="Terminal_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&gt;_"
+                                       Width="28"
+                                       FontWeight="Bold"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="Terminal"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
                     <Button x:Name="DocumentsButton"
                             Style="{StaticResource NavButton}"
                             Background="#185ABD"
@@ -644,6 +657,9 @@
 
                 <views:RepositoriesView x:Name="RepositoriesSurface"
                                         Visibility="Collapsed"/>
+
+                <views:TerminalView x:Name="TerminalSurface"
+                                    Visibility="Collapsed"/>
 
 
                 <Grid x:Name="FilesSurface"
