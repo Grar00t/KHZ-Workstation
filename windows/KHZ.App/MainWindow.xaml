@@ -120,6 +120,19 @@
                         </StackPanel>
                     </Button>
 
+                    <Button x:Name="SearchButton"
+                            Style="{StaticResource NavButton}"
+                            Click="Search_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⌕"
+                                       FontSize="17"
+                                       Width="28"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="Search"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
                     <Button x:Name="DocumentsButton"
                             Style="{StaticResource NavButton}"
                             Background="#185ABD"
@@ -592,6 +605,13 @@
                      ========================================= -->
                 <views:IntegrationsView x:Name="IntegrationsSurface"
                                        Visibility="Collapsed"/>
+
+
+                <!-- =========================================
+                     LOCAL SEARCH
+                     ========================================= -->
+                <views:SearchView x:Name="SearchSurface"
+                                  Visibility="Collapsed"/>
 
 
                 <Grid x:Name="FilesSurface"
