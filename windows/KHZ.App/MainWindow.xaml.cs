@@ -31,7 +31,39 @@ public partial class MainWindow : Window
         await OfficeWeb.EnsureCoreWebView2Async(env);
 
         OfficeWeb.CoreWebView2.Navigate(
-            "http://localhost:8090/editor"
+            "http://localhost:8090/editor/sheet"
         );
     }
+
+    private void NavigateOffice(string kind)
+    {
+        if (OfficeWeb.CoreWebView2 is null)
+            return;
+
+        SectionTitle.Text = kind switch
+        {
+            "document" => "Documents",
+            "sheet" => "Sheets",
+            "slide" => "Slides",
+            "pdf" => "PDF",
+            _ => "Office"
+        };
+
+        OfficeWeb.CoreWebView2.Navigate(
+            $"http://localhost:8090/editor/{kind}"
+        );
+    }
+
+    private void Documents_Click(object sender, RoutedEventArgs e)
+        => NavigateOffice("document");
+
+    private void Sheets_Click(object sender, RoutedEventArgs e)
+        => NavigateOffice("sheet");
+
+    private void Slides_Click(object sender, RoutedEventArgs e)
+        => NavigateOffice("slide");
+
+    private void Pdf_Click(object sender, RoutedEventArgs e)
+        => NavigateOffice("pdf");
+
 }

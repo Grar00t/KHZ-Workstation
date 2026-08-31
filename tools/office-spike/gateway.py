@@ -21,12 +21,58 @@ ROOT = Path(
     )
 ).resolve()
 
-DOC = (
-    ROOT
-    / "acceptance"
-    / "roundtrip"
-    / "OnlyOffice-InstitutionalWorkbook.xlsx"
-).resolve()
+DOCUMENTS = {
+    "document": {
+        "path": (
+            ROOT / "acceptance" / "roundtrip"
+            / "OnlyOffice-InstitutionalReport.docx"
+        ).resolve(),
+        "document_type": "word",
+        "file_type": "docx",
+        "content_type": (
+            "application/vnd.openxmlformats-officedocument."
+            "wordprocessingml.document"
+        ),
+    },
+    "sheet": {
+        "path": (
+            ROOT / "acceptance" / "roundtrip"
+            / "OnlyOffice-InstitutionalWorkbook.xlsx"
+        ).resolve(),
+        "document_type": "cell",
+        "file_type": "xlsx",
+        "content_type": (
+            "application/vnd.openxmlformats-officedocument."
+            "spreadsheetml.sheet"
+        ),
+    },
+    "slide": {
+        "path": (
+            ROOT / "acceptance" / "roundtrip"
+            / "OnlyOffice-InstitutionalPresentation.pptx"
+        ).resolve(),
+        "document_type": "slide",
+        "file_type": "pptx",
+        "content_type": (
+            "application/vnd.openxmlformats-officedocument."
+            "presentationml.presentation"
+        ),
+    },
+    "pdf": {
+        "path": (
+            ROOT / "acceptance" / "roundtrip"
+            / "OnlyOffice-InstitutionalPacket.pdf"
+        ).resolve(),
+        "document_type": "pdf",
+        "file_type": "pdf",
+        "content_type": "application/pdf",
+    },
+}
+
+DEFAULT_DOCUMENT = "sheet"
+
+# Temporary compatibility alias until routing is generalized.
+DOC = DOCUMENTS[DEFAULT_DOCUMENT]["path"]
 
 REPORT = (
     ROOT
@@ -53,9 +99,13 @@ OFFICE_NET = ipaddress.ip_network(
 )
 
 
-def document_key():
+def get_document(kind):
+    return DOCUMENTS.get(kind)
+
+
+def document_key(path=DOC):
     h = hashlib.sha256()
-    with DOC.open("rb") as f:
+    with path.open("rb") as f:
         while True:
             chunk = f.read(1024 * 1024)
             if not chunk:
@@ -126,8 +176,15 @@ class Handler(BaseHTTPRequestHandler):
                 200,
                 {
                     "status": "ok",
-                    "document": DOC.name,
-                    "document_exists": DOC.exists(),
+                    "documents": {
+                        kind: {
+                            "name": info["path"].name,
+                            "exists": info["path"].exists(),
+                            "document_type": info["document_type"],
+                            "file_type": info["file_type"],
+                        }
+                        for kind, info in DOCUMENTS.items()
+                    },
                     "document_server": DOCS_BROWSER,
                     "gateway_internal": INTERNAL_BASE,
                 },
@@ -135,7 +192,26 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/file/InstitutionalWorkbook.xlsx":
-            if not DOC.exists():
+            kind = DEFAULT_DOCUMENT
+        elif path.startswith("/file/"):
+            kind = path.removeprefix("/file/").strip("/")
+        else:
+            kind = None
+
+        if kind is not None:
+            document = get_document(kind)
+
+            if document is None:
+                send_json(
+                    self,
+                    404,
+                    {"error": "unknown document type"}
+                )
+                return
+
+            target = document["path"]
+
+            if not target.exists():
                 send_json(
                     self,
                     404,
@@ -143,12 +219,13 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 return
 
-            size = DOC.stat().st_size
+            size = target.stat().st_size
+            title = target.name.removeprefix("OnlyOffice-")
 
             self.send_response(200)
             self.send_header(
                 "Content-Type",
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                document["content_type"]
             )
             self.send_header(
                 "Content-Length",
@@ -156,11 +233,11 @@ class Handler(BaseHTTPRequestHandler):
             )
             self.send_header(
                 "Content-Disposition",
-                'inline; filename="InstitutionalWorkbook.xlsx"'
+                f'inline; filename="{title}"'
             )
             self.end_headers()
 
-            with DOC.open("rb") as f:
+            with target.open("rb") as f:
                 while True:
                     chunk = f.read(1024 * 1024)
                     if not chunk:
@@ -170,17 +247,46 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/editor":
+            kind = DEFAULT_DOCUMENT
+        elif path.startswith("/editor/"):
+            kind = path.removeprefix("/editor/").strip("/")
+        else:
+            kind = None
+
+        if kind is not None:
+            document = get_document(kind)
+
+            if document is None:
+                send_json(
+                    self,
+                    404,
+                    {"error": "unknown document type"}
+                )
+                return
+
+            target = document["path"]
+
+            if not target.exists():
+                send_json(
+                    self,
+                    404,
+                    {"error": "document not found"}
+                )
+                return
+
+            title = target.name.removeprefix("OnlyOffice-")
+
             config = {
-                "documentType": "cell",
+                "documentType": document["document_type"],
 
                 "document": {
-                    "fileType": "xlsx",
-                    "key": document_key(),
-                    "title": "InstitutionalWorkbook.xlsx",
+                    "fileType": document["file_type"],
+                    "key": document_key(target),
+                    "title": title,
 
                     "url": (
                         INTERNAL_BASE
-                        + "/file/InstitutionalWorkbook.xlsx"
+                        + f"/file/{kind}"
                     ),
 
                     "permissions": {
@@ -196,7 +302,7 @@ class Handler(BaseHTTPRequestHandler):
 
                     "callbackUrl": (
                         INTERNAL_BASE
-                        + "/callback"
+                        + f"/callback/{kind}"
                     ),
 
                     "user": {
@@ -226,7 +332,7 @@ class Handler(BaseHTTPRequestHandler):
 <meta
   name="viewport"
   content="width=device-width,initial-scale=1">
-<title>KHZ Sheets</title>
+<title>KHZ Office - {html.escape(kind)}</title>
 
 <style>
 html, body, #editor {{
@@ -282,13 +388,29 @@ window.khzeditor =
     def do_POST(self):
         path = urllib.parse.urlparse(self.path).path
 
-        if path != "/callback":
+        if path == "/callback":
+            kind = DEFAULT_DOCUMENT
+        elif path.startswith("/callback/"):
+            kind = path.removeprefix("/callback/").strip("/")
+        else:
             send_json(
                 self,
                 404,
                 {"error": 1}
             )
             return
+
+        document = get_document(kind)
+
+        if document is None:
+            send_json(
+                self,
+                404,
+                {"error": 1}
+            )
+            return
+
+        target = document["path"]
 
         try:
             length = int(
@@ -322,6 +444,7 @@ window.khzeditor =
                     json.dumps(
                         {
                             "time": time.time(),
+                            "kind": kind,
                             "payload": payload,
                         },
                         ensure_ascii=False,
@@ -359,8 +482,8 @@ window.khzeditor =
                     with tempfile.NamedTemporaryFile(
                         mode="wb",
                         prefix="khz-onlyoffice-",
-                        suffix=".xlsx",
-                        dir=str(DOC.parent),
+                        suffix=target.suffix,
+                        dir=str(target.parent),
                         delete=False,
                     ) as temp:
 
@@ -379,11 +502,11 @@ window.khzeditor =
 
                 os.replace(
                     temp_path,
-                    DOC
+                    target
                 )
 
                 print(
-                    f"SAVED status={status} path={DOC}",
+                    f"SAVED kind={kind} status={status} path={target}",
                     flush=True,
                 )
 
@@ -395,7 +518,7 @@ window.khzeditor =
 
         except Exception as exc:
             print(
-                f"CALLBACK ERROR: {exc}",
+                f"CALLBACK ERROR kind={kind}: {exc}",
                 flush=True,
             )
 

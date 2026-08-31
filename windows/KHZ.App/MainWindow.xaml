@@ -42,10 +42,42 @@
                 <StackPanel Grid.Row="1" Margin="0,18,0,0">
                     <Button Content="Home" Height="38" Margin="0,2"/>
                     <Button Content="Files" Height="38" Margin="0,2"/>
-                    <Button Content="Documents" Height="38" Margin="0,2"/>
-                    <Button Content="Sheets" Height="38" Margin="0,2"/>
-                    <Button Content="Slides" Height="38" Margin="0,2"/>
-                    <Button Content="PDF" Height="38" Margin="0,2"/>
+                    <Button x:Name="DocumentsButton"
+                             Content="Documents"
+                             Height="38"
+                             Margin="0,2"
+                             Background="#185ABD"
+                             BorderBrush="#185ABD"
+                             Foreground="White"
+                             FontWeight="SemiBold"
+                             Click="Documents_Click"/>
+                    <Button x:Name="SheetsButton"
+                             Content="Sheets"
+                             Height="38"
+                             Margin="0,2"
+                             Background="#107C41"
+                             BorderBrush="#107C41"
+                             Foreground="White"
+                             FontWeight="SemiBold"
+                             Click="Sheets_Click"/>
+                    <Button x:Name="SlidesButton"
+                             Content="Slides"
+                             Height="38"
+                             Margin="0,2"
+                             Background="#C43E1C"
+                             BorderBrush="#C43E1C"
+                             Foreground="White"
+                             FontWeight="SemiBold"
+                             Click="Slides_Click"/>
+                    <Button x:Name="PdfButton"
+                             Content="PDF"
+                             Height="38"
+                             Margin="0,2"
+                             Background="#D13438"
+                             BorderBrush="#D13438"
+                             Foreground="White"
+                             FontWeight="SemiBold"
+                             Click="Pdf_Click"/>
                     <Button Content="Data" Height="38" Margin="0,2"/>
                     <Button Content="Search" Height="38" Margin="0,2"/>
                 </StackPanel>
@@ -69,7 +101,8 @@
                     BorderThickness="0,0,0,1">
 
                 <Grid Margin="20,0">
-                    <TextBlock Text="Sheets"
+                    <TextBlock x:Name="SectionTitle"
+                               Text="Sheets"
                                VerticalAlignment="Center"
                                FontSize="18"
                                FontWeight="SemiBold"/>
