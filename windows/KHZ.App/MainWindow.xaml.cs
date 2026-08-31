@@ -2,6 +2,7 @@ using System.Windows.Threading;
 using System.Globalization;
 using KHZ.App.Trust;
 using KHZ.App.Integrations;
+using KHZ.App.Tasks;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
 using System;
@@ -38,6 +39,8 @@ public partial class MainWindow : Window
 
     private readonly IIntegrationConfigStore _integrationConfigStore;
 
+    private readonly ITaskStore _taskStore;
+
     private readonly CapabilityPolicy _policy =
         CapabilityPolicy.CreateInstitutionalDefault();
 
@@ -63,6 +66,10 @@ public partial class MainWindow : Window
             new SqliteIntegrationConfigStore(
                 _trust.DatabasePath);
 
+        _taskStore =
+            new SqliteTaskStore(
+                _trust.DatabasePath);
+
         ActivitySurface.Configure(
             _activityReader);
 
@@ -78,6 +85,10 @@ public partial class MainWindow : Window
             _activityReader,
             _activity,
             _policy);
+
+        TasksSurface.Configure(
+            _taskStore,
+            _activity);
 
         _clockTimer.Tick += (_, _) => UpdateClock();
 
@@ -209,6 +220,7 @@ public partial class MainWindow : Window
         ActivitySurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
+        TasksSurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
 
         if (OfficeWeb.CoreWebView2 is null)
@@ -242,6 +254,7 @@ public partial class MainWindow : Window
         ActivitySurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
+        TasksSurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
 
         OfficeWeb.Visibility = Visibility.Collapsed;
@@ -318,6 +331,7 @@ public partial class MainWindow : Window
         ActivitySurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
+        TasksSurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
 
         HomeSurface.Visibility = Visibility.Collapsed;
@@ -482,6 +496,7 @@ public partial class MainWindow : Window
         FilesSurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
+        TasksSurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
 
         ActivitySurface.Visibility = Visibility.Visible;
@@ -505,12 +520,37 @@ public partial class MainWindow : Window
         FilesSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
+        TasksSurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
 
         SecuritySurface.Visibility = Visibility.Visible;
         SectionTitle.Text = "Security";
 
         SecuritySurface.RefreshSecurity();
+    }
+
+    private void Tasks_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        _activity.Record(
+            category: "navigation",
+            action: "tasks.open",
+            target: "tasks",
+            result: "OPENED");
+
+        OfficeWeb.Visibility = Visibility.Collapsed;
+        HomeSurface.Visibility = Visibility.Collapsed;
+        FilesSurface.Visibility = Visibility.Collapsed;
+        ActivitySurface.Visibility = Visibility.Collapsed;
+        SecuritySurface.Visibility = Visibility.Collapsed;
+        IntegrationsSurface.Visibility = Visibility.Collapsed;
+        SearchSurface.Visibility = Visibility.Collapsed;
+
+        TasksSurface.Visibility = Visibility.Visible;
+        SectionTitle.Text = "Tasks";
+
+        TasksSurface.LoadTasks();
     }
 
     private void Search_Click(
@@ -529,6 +569,7 @@ public partial class MainWindow : Window
         ActivitySurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
+        TasksSurface.Visibility = Visibility.Collapsed;
 
         SearchSurface.SetRootDirectory(
             _currentDirectory);
@@ -554,6 +595,8 @@ public partial class MainWindow : Window
         FilesSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
+        SearchSurface.Visibility = Visibility.Collapsed;
+        TasksSurface.Visibility = Visibility.Collapsed;
 
         IntegrationsSurface.Visibility = Visibility.Visible;
         SectionTitle.Text = "Integrations";

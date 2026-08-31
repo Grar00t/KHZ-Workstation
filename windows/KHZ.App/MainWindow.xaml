@@ -133,6 +133,19 @@
                         </StackPanel>
                     </Button>
 
+                    <Button x:Name="TasksButton"
+                            Style="{StaticResource NavButton}"
+                            Click="Tasks_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="✓"
+                                       FontSize="16"
+                                       Width="28"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="Tasks"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
                     <Button x:Name="DocumentsButton"
                             Style="{StaticResource NavButton}"
                             Background="#185ABD"
@@ -612,6 +625,9 @@
                      ========================================= -->
                 <views:SearchView x:Name="SearchSurface"
                                   Visibility="Collapsed"/>
+
+                <views:TasksView x:Name="TasksSurface"
+                                 Visibility="Collapsed"/>
 
 
                 <Grid x:Name="FilesSurface"
