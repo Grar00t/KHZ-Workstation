@@ -10,3 +10,15 @@ htmlcov/
 *.tmp
 *.restore-staging
 .DS_Store
+
+# .NET build artifacts
+**/bin/
+**/obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# WebView2 runtime data
+**/WebView2/
