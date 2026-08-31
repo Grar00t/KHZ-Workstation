@@ -130,6 +130,7 @@
                         <RowDefinition Height="34"/>
                         <RowDefinition Height="34"/>
                                         <RowDefinition Height="34"/>
+                                        <RowDefinition Height="34"/>
                 </Grid.RowDefinitions>
 
                     <TextBlock Text="Local Office navigation"
@@ -198,6 +199,15 @@
                                VerticalAlignment="Center"/>
                     <TextBlock x:Name="SecurityAiText"
                                Grid.Row="7"
+                               Grid.Column="1"
+                               VerticalAlignment="Center"
+                               FontWeight="SemiBold"/>
+
+                    <TextBlock Grid.Row="8"
+                               Text="Local repository inspection"
+                               VerticalAlignment="Center"/>
+                    <TextBlock x:Name="SecurityRepositoryInspectionText"
+                               Grid.Row="8"
                                Grid.Column="1"
                                VerticalAlignment="Center"
                                FontWeight="SemiBold"/>

@@ -65,6 +65,11 @@ public partial class SecurityView : UserControl
                 CapabilityStatus(
                     Capability.LocalFileLaunch);
 
+            SecurityRepositoryInspectionText.Text =
+                CapabilityStatus(
+                    Capability.LocalRepositoryInspection,
+                    "Allowed · read-only Git metadata");
+
             SecurityExternalWebText.Text =
                 CapabilityStatus(
                     Capability.ExternalWebNavigation);

@@ -146,6 +146,19 @@
                         </StackPanel>
                     </Button>
 
+                    <Button x:Name="RepositoriesButton"
+                            Style="{StaticResource NavButton}"
+                            Click="Repositories_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⌘"
+                                       FontSize="16"
+                                       Width="28"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="Repositories"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
                     <Button x:Name="DocumentsButton"
                             Style="{StaticResource NavButton}"
                             Background="#185ABD"
@@ -628,6 +641,9 @@
 
                 <views:TasksView x:Name="TasksSurface"
                                  Visibility="Collapsed"/>
+
+                <views:RepositoriesView x:Name="RepositoriesSurface"
+                                        Visibility="Collapsed"/>
 
 
                 <Grid x:Name="FilesSurface"

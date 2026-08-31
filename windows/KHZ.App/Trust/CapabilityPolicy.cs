@@ -6,6 +6,7 @@ internal enum Capability
 {
     LocalOfficeNavigation,
     LocalFileLaunch,
+    LocalRepositoryInspection,
 
     ExternalWebNavigation,
 
@@ -33,7 +34,8 @@ internal sealed class CapabilityPolicy
         => new(
         [
             Capability.LocalOfficeNavigation,
-            Capability.LocalFileLaunch
+            Capability.LocalFileLaunch,
+            Capability.LocalRepositoryInspection
         ]);
 
     public bool IsAllowed(Capability capability)

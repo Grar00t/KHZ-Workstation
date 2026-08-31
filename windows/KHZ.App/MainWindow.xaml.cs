@@ -3,6 +3,7 @@ using System.Globalization;
 using KHZ.App.Trust;
 using KHZ.App.Integrations;
 using KHZ.App.Tasks;
+using KHZ.App.Repositories;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
 using System;
@@ -40,6 +41,9 @@ public partial class MainWindow : Window
     private readonly IIntegrationConfigStore _integrationConfigStore;
 
     private readonly ITaskStore _taskStore;
+
+    private readonly IRepositoryInspector _repositoryInspector =
+        new GitRepositoryInspector();
 
     private readonly CapabilityPolicy _policy =
         CapabilityPolicy.CreateInstitutionalDefault();
@@ -89,6 +93,11 @@ public partial class MainWindow : Window
         TasksSurface.Configure(
             _taskStore,
             _activity);
+
+        RepositoriesSurface.Configure(
+            _repositoryInspector,
+            _activity,
+            _policy);
 
         _clockTimer.Tick += (_, _) => UpdateClock();
 
@@ -221,6 +230,7 @@ public partial class MainWindow : Window
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
+        RepositoriesSurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
 
         if (OfficeWeb.CoreWebView2 is null)
@@ -255,6 +265,7 @@ public partial class MainWindow : Window
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
+        RepositoriesSurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
 
         OfficeWeb.Visibility = Visibility.Collapsed;
@@ -332,6 +343,7 @@ public partial class MainWindow : Window
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
+        RepositoriesSurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
 
         HomeSurface.Visibility = Visibility.Collapsed;
@@ -497,6 +509,7 @@ public partial class MainWindow : Window
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
+        RepositoriesSurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
 
         ActivitySurface.Visibility = Visibility.Visible;
@@ -521,12 +534,39 @@ public partial class MainWindow : Window
         ActivitySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
+        RepositoriesSurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
 
         SecuritySurface.Visibility = Visibility.Visible;
         SectionTitle.Text = "Security";
 
         SecuritySurface.RefreshSecurity();
+    }
+
+    private void Repositories_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        _activity.Record(
+            category: "navigation",
+            action: "repositories.open",
+            target: "repositories",
+            result: "OPENED");
+
+        OfficeWeb.Visibility = Visibility.Collapsed;
+        HomeSurface.Visibility = Visibility.Collapsed;
+        FilesSurface.Visibility = Visibility.Collapsed;
+        ActivitySurface.Visibility = Visibility.Collapsed;
+        SecuritySurface.Visibility = Visibility.Collapsed;
+        IntegrationsSurface.Visibility = Visibility.Collapsed;
+        SearchSurface.Visibility = Visibility.Collapsed;
+        TasksSurface.Visibility = Visibility.Collapsed;
+
+        RepositoriesSurface.SetInitialDirectory(
+            _currentDirectory);
+
+        RepositoriesSurface.Visibility = Visibility.Visible;
+        SectionTitle.Text = "Repositories";
     }
 
     private void Tasks_Click(
@@ -570,6 +610,7 @@ public partial class MainWindow : Window
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
+        RepositoriesSurface.Visibility = Visibility.Collapsed;
 
         SearchSurface.SetRootDirectory(
             _currentDirectory);
@@ -597,6 +638,7 @@ public partial class MainWindow : Window
         SecuritySurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
+        RepositoriesSurface.Visibility = Visibility.Collapsed;
 
         IntegrationsSurface.Visibility = Visibility.Visible;
         SectionTitle.Text = "Integrations";
