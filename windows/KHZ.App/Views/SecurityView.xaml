@@ -131,7 +131,8 @@
                         <RowDefinition Height="34"/>
                                         <RowDefinition Height="34"/>
                                         <RowDefinition Height="34"/>
-                </Grid.RowDefinitions>
+                                    <RowDefinition Height="34"/>
+</Grid.RowDefinitions>
 
                     <TextBlock Text="Local Office navigation"
                                VerticalAlignment="Center"/>
@@ -208,6 +209,15 @@
                                VerticalAlignment="Center"/>
                     <TextBlock x:Name="SecurityRepositoryInspectionText"
                                Grid.Row="8"
+                               Grid.Column="1"
+                               VerticalAlignment="Center"
+                               FontWeight="SemiBold"/>
+
+                    <TextBlock Grid.Row="9"
+                               Text="User terminal execution"
+                               VerticalAlignment="Center"/>
+                    <TextBlock x:Name="SecurityUserTerminalText"
+                               Grid.Row="9"
                                Grid.Column="1"
                                VerticalAlignment="Center"
                                FontWeight="SemiBold"/>

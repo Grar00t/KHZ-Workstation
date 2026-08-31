@@ -1,4 +1,5 @@
 using KHZ.App.Trust;
+using KHZ.App.Terminal;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,6 +10,7 @@ public partial class SecurityView : UserControl
 {
     private TrustStore? _trust;
     private CapabilityPolicy? _policy;
+    private UserTerminalSessionGate? _terminalSessionGate;
 
     public SecurityView()
     {
@@ -17,7 +19,8 @@ public partial class SecurityView : UserControl
 
     internal void Configure(
         TrustStore trust,
-        CapabilityPolicy policy)
+        CapabilityPolicy policy,
+        UserTerminalSessionGate terminalSessionGate)
     {
         _trust =
             trust
@@ -28,11 +31,18 @@ public partial class SecurityView : UserControl
             policy
             ?? throw new ArgumentNullException(
                 nameof(policy));
+
+        _terminalSessionGate =
+            terminalSessionGate
+            ?? throw new ArgumentNullException(
+                nameof(terminalSessionGate));
     }
 
     internal void RefreshSecurity()
     {
-        if (_trust is null || _policy is null)
+        if (_trust is null
+            || _policy is null
+            || _terminalSessionGate is null)
         {
             ShowError(
                 "Security dependencies are not configured.");
@@ -69,6 +79,14 @@ public partial class SecurityView : UserControl
                 CapabilityStatus(
                     Capability.LocalRepositoryInspection,
                     "Allowed · read-only Git metadata");
+
+            SecurityUserTerminalText.Text =
+                _policy.IsAllowed(
+                    Capability.UserTerminalExecution)
+                    ? "Allowed by policy"
+                    : _terminalSessionGate.IsEnabled
+                        ? "Session-enabled by user · not persisted"
+                        : "Denied by default · session disabled";
 
             SecurityExternalWebText.Text =
                 CapabilityStatus(

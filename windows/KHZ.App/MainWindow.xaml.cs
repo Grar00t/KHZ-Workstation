@@ -4,6 +4,7 @@ using KHZ.App.Trust;
 using KHZ.App.Integrations;
 using KHZ.App.Tasks;
 using KHZ.App.Repositories;
+using KHZ.App.Terminal;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
 using System;
@@ -45,6 +46,9 @@ public partial class MainWindow : Window
     private readonly IRepositoryInspector _repositoryInspector =
         new GitRepositoryInspector();
 
+    private readonly UserTerminalSessionGate _terminalSessionGate =
+        new();
+
     private readonly CapabilityPolicy _policy =
         CapabilityPolicy.CreateInstitutionalDefault();
 
@@ -79,7 +83,8 @@ public partial class MainWindow : Window
 
         SecuritySurface.Configure(
             _trust,
-            _policy);
+            _policy,
+            _terminalSessionGate);
 
         IntegrationsSurface.Configure(
             _integrationConfigStore,
