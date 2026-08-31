@@ -8,7 +8,7 @@ namespace KHZ.App.Trust;
 
 internal sealed class TrustStore : IActivityStore, IActivityReader
 {
-    private const int CurrentSchemaVersion = 1;
+    private const int CurrentSchemaVersion = 2;
 
     public string DatabasePath { get; }
 
@@ -52,6 +52,13 @@ internal sealed class TrustStore : IActivityStore, IActivityReader
                 CultureInfo.InvariantCulture
             );
 
+            if (previousVersion > CurrentSchemaVersion)
+            {
+                throw new InvalidDataException(
+                    $"KHZ state database schema {previousVersion} " +
+                    $"is newer than supported schema {CurrentSchemaVersion}.");
+            }
+
             if (previousVersion < CurrentSchemaVersion)
             {
                 ExecuteNonQuery(
@@ -68,9 +75,16 @@ internal sealed class TrustStore : IActivityStore, IActivityReader
 
         ConfigureConnection(connection);
 
-        ExecuteNonQuery(
-            connection,
-            """
+        using (var migration = connection.BeginTransaction())
+        {
+            using var schemaCommand =
+                connection.CreateCommand();
+
+            schemaCommand.Transaction =
+                migration;
+
+            schemaCommand.CommandText =
+                """
             CREATE TABLE IF NOT EXISTS activity_event
             (
                 id                      INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -112,13 +126,39 @@ internal sealed class TrustStore : IActivityStore, IActivityReader
             CREATE INDEX IF NOT EXISTS
                 ix_activity_event_category
             ON activity_event(category, action);
-            """
-        );
 
-        ExecuteNonQuery(
-            connection,
-            $"PRAGMA user_version={CurrentSchemaVersion};"
-        );
+            CREATE TABLE IF NOT EXISTS integration_config
+            (
+                provider_id   TEXT PRIMARY KEY NOT NULL,
+                display_name  TEXT NOT NULL,
+                enabled       INTEGER NOT NULL DEFAULT 0
+                              CHECK(enabled IN (0, 1)),
+                endpoint      TEXT,
+                port          INTEGER
+                              CHECK(port IS NULL OR
+                                    (port >= 1 AND port <= 65535)),
+                database_name TEXT,
+                auth_mode     TEXT NOT NULL DEFAULT 'not_configured',
+                updated_utc   TEXT NOT NULL,
+                updated_local TEXT NOT NULL
+            );
+            """;
+
+            schemaCommand.ExecuteNonQuery();
+
+            using var versionCommand =
+                connection.CreateCommand();
+
+            versionCommand.Transaction =
+                migration;
+
+            versionCommand.CommandText =
+                $"PRAGMA user_version={CurrentSchemaVersion};";
+
+            versionCommand.ExecuteNonQuery();
+
+            migration.Commit();
+        }
 
         IntegrityStatus =
             Convert.ToString(
@@ -448,10 +488,33 @@ internal sealed class TrustStore : IActivityStore, IActivityReader
         var backup =
             $"{DatabasePath}.v{previousVersion}.backup-{stamp}";
 
-        File.Copy(
-            DatabasePath,
-            backup,
-            overwrite: false);
+        var sourceBuilder =
+            new SqliteConnectionStringBuilder
+            {
+                DataSource = DatabasePath,
+                Mode = SqliteOpenMode.ReadOnly
+            };
+
+        var backupBuilder =
+            new SqliteConnectionStringBuilder
+            {
+                DataSource = backup,
+                Mode = SqliteOpenMode.ReadWriteCreate
+            };
+
+        using var source =
+            new SqliteConnection(
+                sourceBuilder.ToString());
+
+        using var destination =
+            new SqliteConnection(
+                backupBuilder.ToString());
+
+        source.Open();
+        destination.Open();
+
+        source.BackupDatabase(
+            destination);
     }
 
     private static object? ExecuteScalar(
