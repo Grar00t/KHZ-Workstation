@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -8,6 +9,10 @@ namespace KHZ.App.Terminal;
 
 internal sealed class PowerShellTerminalRunner : ITerminalRunner
 {
+    private const int MaxCapturedCharacters = 1_048_576;
+    private const string TruncationMarker =
+        "[KHZ output truncated after 1048576 characters]";
+
     private readonly string _powerShellExecutable;
 
     internal PowerShellTerminalRunner()
@@ -82,10 +87,10 @@ internal sealed class PowerShellTerminalRunner : ITerminalRunner
         }
 
         var stdoutTask =
-            process.StandardOutput.ReadToEndAsync();
+            ReadBoundedAsync(process.StandardOutput);
 
         var stderrTask =
-            process.StandardError.ReadToEndAsync();
+            ReadBoundedAsync(process.StandardError);
 
         using var timeoutSource =
             new CancellationTokenSource(
@@ -194,6 +199,44 @@ internal sealed class PowerShellTerminalRunner : ITerminalRunner
         {
             // Process may already have exited or become unavailable.
         }
+    }
+
+    private static async Task<string> ReadBoundedAsync(
+        StreamReader reader)
+    {
+        var builder = new StringBuilder();
+        var buffer = new char[8192];
+        var truncated = false;
+
+        while (true)
+        {
+            var read = await reader.ReadAsync(buffer.AsMemory());
+
+            if (read == 0)
+                break;
+
+            var remaining =
+                MaxCapturedCharacters - builder.Length;
+
+            if (remaining > 0)
+            {
+                builder.Append(
+                    buffer,
+                    0,
+                    Math.Min(remaining, read));
+            }
+
+            if (read > remaining)
+                truncated = true;
+        }
+
+        if (truncated)
+        {
+            builder.AppendLine();
+            builder.Append(TruncationMarker);
+        }
+
+        return builder.ToString();
     }
 
     private static async Task<string> SafeReadAsync(
