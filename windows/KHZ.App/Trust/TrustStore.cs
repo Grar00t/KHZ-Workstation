@@ -6,7 +6,7 @@ using System.Text.Json;
 
 namespace KHZ.App.Trust;
 
-internal sealed class TrustStore
+internal sealed class TrustStore : IActivityStore
 {
     private const int CurrentSchemaVersion = 1;
 

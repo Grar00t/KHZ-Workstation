@@ -31,6 +31,8 @@ public partial class MainWindow : Window
 
     private readonly TrustStore _trust = new();
 
+    private readonly IActivityStore _activity;
+
     private readonly CapabilityPolicy _policy =
         CapabilityPolicy.CreateInstitutionalDefault();
 
@@ -48,6 +50,8 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        _activity = _trust;
 
         _clockTimer.Tick += (_, _) => UpdateClock();
 
@@ -93,7 +97,7 @@ public partial class MainWindow : Window
     {
         _trust.Initialize();
 
-        _trust.Record(
+        _activity.Record(
             category: "system",
             action: "application.start",
             target: Environment.ProcessPath,
@@ -139,7 +143,7 @@ public partial class MainWindow : Window
                 OfficeStatusPill.Background =
                     new SolidColorBrush(Color.FromRgb(231, 246, 234));
 
-                _trust.Record(
+                _activity.Record(
                     category: "runtime",
                     action: "office.health",
                     target: GatewayHealth.ToString(),
@@ -159,7 +163,7 @@ public partial class MainWindow : Window
         OfficeStatusPill.Background =
             new SolidColorBrush(Color.FromRgb(249, 232, 232));
 
-        _trust.Record(
+        _activity.Record(
             category: "runtime",
             action: "office.health",
             target: GatewayHealth.ToString(),
@@ -187,7 +191,7 @@ public partial class MainWindow : Window
             _ => "Office"
         };
 
-        _trust.Record(
+        _activity.Record(
             category: "navigation",
             action: "office.open",
             target: kind,
@@ -204,7 +208,7 @@ public partial class MainWindow : Window
         HomeSurface.Visibility = Visibility.Visible;
         SectionTitle.Text = "Home";
 
-        _trust.Record(
+        _activity.Record(
             category: "navigation",
             action: "home.open",
             target: "home",
@@ -245,7 +249,7 @@ public partial class MainWindow : Window
         {
             e.Cancel = true;
 
-            _trust.Record(
+            _activity.Record(
                 category: "security",
                 action: "webview.navigation",
                 target: e.Uri,
@@ -275,7 +279,7 @@ public partial class MainWindow : Window
         FilesSurface.Visibility = Visibility.Visible;
         SectionTitle.Text = "Files";
 
-        _trust.Record(
+        _activity.Record(
             category: "navigation",
             action: "files.open",
             target: _currentDirectory,
@@ -383,7 +387,7 @@ public partial class MainWindow : Window
         if (!_policy.IsAllowed(
                 Capability.LocalFileLaunch))
         {
-            _trust.Record(
+            _activity.Record(
                 category: "security",
                 action: "file.launch",
                 target: entry.FullPath,
@@ -403,7 +407,7 @@ public partial class MainWindow : Window
                 UseShellExecute = true
             });
 
-            _trust.Record(
+            _activity.Record(
                 category: "filesystem",
                 action: "file.launch",
                 target: entry.FullPath,
@@ -434,7 +438,7 @@ public partial class MainWindow : Window
         _clockTimer.Stop();
         try
         {
-            _trust.Record(
+            _activity.Record(
                 category: "system",
                 action: "application.stop",
                 target: Environment.ProcessPath,
