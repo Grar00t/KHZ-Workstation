@@ -1,6 +1,7 @@
 using System.Windows.Threading;
 using System.Globalization;
 using KHZ.App.Trust;
+using KHZ.App.Integrations;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
 using System;
@@ -35,6 +36,8 @@ public partial class MainWindow : Window
 
     private readonly IActivityReader _activityReader;
 
+    private readonly IIntegrationConfigStore _integrationConfigStore;
+
     private readonly CapabilityPolicy _policy =
         CapabilityPolicy.CreateInstitutionalDefault();
 
@@ -56,12 +59,20 @@ public partial class MainWindow : Window
         _activity = _trust;
         _activityReader = _trust;
 
+        _integrationConfigStore =
+            new SqliteIntegrationConfigStore(
+                _trust.DatabasePath);
+
         ActivitySurface.Configure(
             _activityReader);
 
         SecuritySurface.Configure(
             _trust,
             _policy);
+
+        IntegrationsSurface.Configure(
+            _integrationConfigStore,
+            _activity);
 
         _clockTimer.Tick += (_, _) => UpdateClock();
 
@@ -187,6 +198,7 @@ public partial class MainWindow : Window
     {
         ActivitySurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
+        IntegrationsSurface.Visibility = Visibility.Collapsed;
 
         if (OfficeWeb.CoreWebView2 is null)
             return;
@@ -218,6 +230,7 @@ public partial class MainWindow : Window
     {
         ActivitySurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
+        IntegrationsSurface.Visibility = Visibility.Collapsed;
 
         OfficeWeb.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
@@ -292,6 +305,7 @@ public partial class MainWindow : Window
     {
         ActivitySurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
+        IntegrationsSurface.Visibility = Visibility.Collapsed;
 
         HomeSurface.Visibility = Visibility.Collapsed;
         OfficeWeb.Visibility = Visibility.Collapsed;
@@ -454,6 +468,7 @@ public partial class MainWindow : Window
         HomeSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
+        IntegrationsSurface.Visibility = Visibility.Collapsed;
 
         ActivitySurface.Visibility = Visibility.Visible;
         SectionTitle.Text = "Activity";
@@ -475,11 +490,34 @@ public partial class MainWindow : Window
         HomeSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
+        IntegrationsSurface.Visibility = Visibility.Collapsed;
 
         SecuritySurface.Visibility = Visibility.Visible;
         SectionTitle.Text = "Security";
 
         SecuritySurface.RefreshSecurity();
+    }
+
+    private void Integrations_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        _activity.Record(
+            category: "navigation",
+            action: "integrations.open",
+            target: "integrations",
+            result: "OPENED");
+
+        OfficeWeb.Visibility = Visibility.Collapsed;
+        HomeSurface.Visibility = Visibility.Collapsed;
+        FilesSurface.Visibility = Visibility.Collapsed;
+        ActivitySurface.Visibility = Visibility.Collapsed;
+        SecuritySurface.Visibility = Visibility.Collapsed;
+
+        IntegrationsSurface.Visibility = Visibility.Visible;
+        SectionTitle.Text = "Integrations";
+
+        IntegrationsSurface.LoadConfiguration();
     }
 
     private void Documents_Click(object sender, RoutedEventArgs e)

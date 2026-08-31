@@ -205,6 +205,19 @@
                                        VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
+
+                    <Button x:Name="IntegrationsButton"
+                            Style="{StaticResource NavButton}"
+                            Click="Integrations_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="↔"
+                                       FontSize="15"
+                                       Width="28"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="Integrations"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
 
                 <!-- Truthful runtime status -->
@@ -572,6 +585,13 @@
                      ========================================= -->
                 <views:SecurityView x:Name="SecuritySurface"
                                     Visibility="Collapsed"/>
+
+
+                <!-- =========================================
+                     INTEGRATIONS
+                     ========================================= -->
+                <views:IntegrationsView x:Name="IntegrationsSurface"
+                                       Visibility="Collapsed"/>
 
 
                 <Grid x:Name="FilesSurface"
