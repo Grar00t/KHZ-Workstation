@@ -5,6 +5,7 @@ using KHZ.App.Integrations;
 using KHZ.App.Tasks;
 using KHZ.App.Repositories;
 using KHZ.App.Terminal;
+using KHZ.App.Settings;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
 using System;
@@ -42,6 +43,8 @@ public partial class MainWindow : Window
     private readonly IIntegrationConfigStore _integrationConfigStore;
 
     private readonly ITaskStore _taskStore;
+
+    private readonly IAppSettingsStore _appSettingsStore;
 
     private readonly IRepositoryInspector _repositoryInspector =
         new GitRepositoryInspector();
@@ -81,6 +84,10 @@ public partial class MainWindow : Window
             new SqliteTaskStore(
                 _trust.DatabasePath);
 
+        _appSettingsStore =
+            new SqliteAppSettingsStore(
+                _trust.DatabasePath);
+
         ActivitySurface.Configure(
             _activityReader);
 
@@ -91,6 +98,11 @@ public partial class MainWindow : Window
 
         IntegrationsSurface.Configure(
             _integrationConfigStore,
+            _activity);
+
+
+        SettingsSurface.Configure(
+            _appSettingsStore,
             _activity);
 
         SearchSurface.Configure(
@@ -162,6 +174,9 @@ public partial class MainWindow : Window
     {
         _trust.Initialize();
 
+        _currentDirectory =
+            ResolveStartupWorkspaceFolder();
+
         _activity.Record(
             category: "system",
             action: "application.start",
@@ -191,6 +206,24 @@ public partial class MainWindow : Window
 
         await RefreshRuntimeStatusAsync();
         ShowHome();
+    }
+
+    private string ResolveStartupWorkspaceFolder()
+    {
+        var fallback =
+            Environment.GetFolderPath(
+                Environment.SpecialFolder.MyDocuments);
+
+        var configured =
+            _appSettingsStore.GetDefaultWorkspaceFolder();
+
+        if (!string.IsNullOrWhiteSpace(configured)
+            && Directory.Exists(configured))
+        {
+            return configured;
+        }
+
+        return fallback;
     }
 
     private async Task RefreshRuntimeStatusAsync()
@@ -243,6 +276,7 @@ public partial class MainWindow : Window
         ActivitySurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
+        SettingsSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
         RepositoriesSurface.Visibility = Visibility.Collapsed;
         TerminalSurface.Visibility = Visibility.Collapsed;
@@ -279,6 +313,7 @@ public partial class MainWindow : Window
         ActivitySurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
+        SettingsSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
         RepositoriesSurface.Visibility = Visibility.Collapsed;
         TerminalSurface.Visibility = Visibility.Collapsed;
@@ -358,6 +393,7 @@ public partial class MainWindow : Window
         ActivitySurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
+        SettingsSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
         RepositoriesSurface.Visibility = Visibility.Collapsed;
         TerminalSurface.Visibility = Visibility.Collapsed;
@@ -525,6 +561,7 @@ public partial class MainWindow : Window
         FilesSurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
+        SettingsSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
         RepositoriesSurface.Visibility = Visibility.Collapsed;
         TerminalSurface.Visibility = Visibility.Collapsed;
@@ -551,6 +588,7 @@ public partial class MainWindow : Window
         FilesSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
+        SettingsSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
         RepositoriesSurface.Visibility = Visibility.Collapsed;
         TerminalSurface.Visibility = Visibility.Collapsed;
@@ -578,6 +616,7 @@ public partial class MainWindow : Window
         ActivitySurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
+        SettingsSurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
         RepositoriesSurface.Visibility = Visibility.Collapsed;
@@ -606,6 +645,7 @@ public partial class MainWindow : Window
         ActivitySurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
+        SettingsSurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
 
@@ -632,6 +672,7 @@ public partial class MainWindow : Window
         ActivitySurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
+        SettingsSurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
 
         TasksSurface.Visibility = Visibility.Visible;
@@ -656,6 +697,7 @@ public partial class MainWindow : Window
         ActivitySurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
+        SettingsSurface.Visibility = Visibility.Collapsed;
         TasksSurface.Visibility = Visibility.Collapsed;
         RepositoriesSurface.Visibility = Visibility.Collapsed;
         TerminalSurface.Visibility = Visibility.Collapsed;
@@ -693,6 +735,32 @@ public partial class MainWindow : Window
         SectionTitle.Text = "Integrations";
 
         IntegrationsSurface.LoadConfiguration();
+    }
+
+    private void Settings_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        _activity.Record(
+            category: "navigation",
+            action: "settings.open",
+            target: "settings",
+            result: "OPENED");
+
+        OfficeWeb.Visibility = Visibility.Collapsed;
+        HomeSurface.Visibility = Visibility.Collapsed;
+        FilesSurface.Visibility = Visibility.Collapsed;
+        ActivitySurface.Visibility = Visibility.Collapsed;
+        SecuritySurface.Visibility = Visibility.Collapsed;
+        IntegrationsSurface.Visibility = Visibility.Collapsed;
+        SearchSurface.Visibility = Visibility.Collapsed;
+        TasksSurface.Visibility = Visibility.Collapsed;
+        RepositoriesSurface.Visibility = Visibility.Collapsed;
+        TerminalSurface.Visibility = Visibility.Collapsed;
+
+        SettingsSurface.LoadSettings();
+        SettingsSurface.Visibility = Visibility.Visible;
+        SectionTitle.Text = "Settings";
     }
 
     private void Documents_Click(object sender, RoutedEventArgs e)

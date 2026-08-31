@@ -270,6 +270,19 @@
                                        VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
+
+                    <Button x:Name="SettingsButton"
+                            Style="{StaticResource NavButton}"
+                            Click="Settings_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⚙"
+                                       FontSize="15"
+                                       Width="28"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="Settings"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
 
                 <!-- Truthful runtime status -->
@@ -644,6 +657,13 @@
                      ========================================= -->
                 <views:IntegrationsView x:Name="IntegrationsSurface"
                                        Visibility="Collapsed"/>
+
+
+                <!-- =========================================
+                     SETTINGS
+                     ========================================= -->
+                <views:SettingsView x:Name="SettingsSurface"
+                                    Visibility="Collapsed"/>
 
 
                 <!-- =========================================

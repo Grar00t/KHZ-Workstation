@@ -8,7 +8,7 @@ namespace KHZ.App.Trust;
 
 internal sealed class TrustStore : IActivityStore, IActivityReader
 {
-    private const int CurrentSchemaVersion = 3;
+    private const int CurrentSchemaVersion = 4;
 
     public string DatabasePath { get; }
 
@@ -142,6 +142,16 @@ internal sealed class TrustStore : IActivityStore, IActivityReader
                 updated_utc   TEXT NOT NULL,
                 updated_local TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS app_setting
+            (
+                setting_key   TEXT PRIMARY KEY NOT NULL
+                              CHECK(length(trim(setting_key)) BETWEEN 1 AND 128),
+                value_text    TEXT NOT NULL,
+                updated_utc   TEXT NOT NULL,
+                updated_local TEXT NOT NULL
+            );
+
 
             CREATE TABLE IF NOT EXISTS local_task
             (
