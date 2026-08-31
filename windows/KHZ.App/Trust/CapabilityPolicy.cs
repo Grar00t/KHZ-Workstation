@@ -7,6 +7,7 @@ internal enum Capability
     LocalOfficeNavigation,
     LocalFileLaunch,
     LocalRepositoryInspection,
+    UserTerminalExecution,
 
     ExternalWebNavigation,
 
