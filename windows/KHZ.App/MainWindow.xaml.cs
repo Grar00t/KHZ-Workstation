@@ -33,6 +33,8 @@ public partial class MainWindow : Window
 
     private readonly IActivityStore _activity;
 
+    private readonly IActivityReader _activityReader;
+
     private readonly CapabilityPolicy _policy =
         CapabilityPolicy.CreateInstitutionalDefault();
 
@@ -52,6 +54,7 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         _activity = _trust;
+        _activityReader = _trust;
 
         _clockTimer.Tick += (_, _) => UpdateClock();
 
@@ -175,6 +178,9 @@ public partial class MainWindow : Window
 
     private void NavigateOffice(string kind)
     {
+        ActivitySurface.Visibility = Visibility.Collapsed;
+        SecuritySurface.Visibility = Visibility.Collapsed;
+
         if (OfficeWeb.CoreWebView2 is null)
             return;
 
@@ -203,6 +209,9 @@ public partial class MainWindow : Window
 
     private void ShowHome()
     {
+        ActivitySurface.Visibility = Visibility.Collapsed;
+        SecuritySurface.Visibility = Visibility.Collapsed;
+
         OfficeWeb.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         HomeSurface.Visibility = Visibility.Visible;
@@ -274,6 +283,9 @@ public partial class MainWindow : Window
 
     private void Files_Click(object sender, RoutedEventArgs e)
     {
+        ActivitySurface.Visibility = Visibility.Collapsed;
+        SecuritySurface.Visibility = Visibility.Collapsed;
+
         HomeSurface.Visibility = Visibility.Collapsed;
         OfficeWeb.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Visible;
@@ -420,6 +432,122 @@ public partial class MainWindow : Window
             FilesError.Text = ex.Message;
         }
     }
+
+    private void Activity_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        _activity.Record(
+            category: "navigation",
+            action: "activity.open",
+            target: "activity",
+            result: "OPENED");
+
+        OfficeWeb.Visibility = Visibility.Collapsed;
+        HomeSurface.Visibility = Visibility.Collapsed;
+        FilesSurface.Visibility = Visibility.Collapsed;
+        SecuritySurface.Visibility = Visibility.Collapsed;
+
+        ActivitySurface.Visibility = Visibility.Visible;
+        SectionTitle.Text = "Activity";
+
+        RefreshActivitySurface();
+    }
+
+    private void RefreshActivity_Click(
+        object sender,
+        RoutedEventArgs e)
+        => RefreshActivitySurface();
+
+    private void RefreshActivitySurface()
+    {
+        var rows =
+            _activityReader.ReadRecent(250);
+
+        ActivityGrid.ItemsSource = rows;
+
+        ActivityCountText.Text =
+            $"{rows.Count} recent local events";
+    }
+
+    private void Security_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        _activity.Record(
+            category: "navigation",
+            action: "security.open",
+            target: "security",
+            result: "OPENED");
+
+        OfficeWeb.Visibility = Visibility.Collapsed;
+        HomeSurface.Visibility = Visibility.Collapsed;
+        FilesSurface.Visibility = Visibility.Collapsed;
+        ActivitySurface.Visibility = Visibility.Collapsed;
+
+        SecuritySurface.Visibility = Visibility.Visible;
+        SectionTitle.Text = "Security";
+
+        RefreshSecuritySurface();
+    }
+
+    private void RefreshSecurity_Click(
+        object sender,
+        RoutedEventArgs e)
+        => RefreshSecuritySurface();
+
+    private void RefreshSecuritySurface()
+    {
+        var integrity =
+            _trust.CheckIntegrity();
+
+        SecurityIntegrityText.Text =
+            string.Equals(
+                integrity,
+                "ok",
+                StringComparison.OrdinalIgnoreCase)
+                ? "Healthy · integrity_check=ok"
+                : $"Attention · {integrity}";
+
+        SecurityDatabasePathText.Text =
+            _trust.DatabasePath;
+
+        SecurityOfficeNavigationText.Text =
+            CapabilityStatus(
+                Capability.LocalOfficeNavigation,
+                allowedDetail: "Allowed · localhost:8090 only");
+
+        SecurityFileLaunchText.Text =
+            CapabilityStatus(
+                Capability.LocalFileLaunch);
+
+        SecurityExternalWebText.Text =
+            CapabilityStatus(
+                Capability.ExternalWebNavigation);
+
+        SecurityExternalNetworkText.Text =
+            CapabilityStatus(
+                Capability.ExternalNetwork);
+
+        SecurityProcessText.Text =
+            CapabilityStatus(
+                Capability.ArbitraryProcessExecution);
+
+        SecurityIntegrationWriteText.Text =
+            CapabilityStatus(
+                Capability.IntegrationWrite);
+
+        SecurityAiText.Text =
+            CapabilityStatus(
+                Capability.AiInference);
+    }
+
+    private string CapabilityStatus(
+        Capability capability,
+        string allowedDetail = "Allowed")
+        => _policy.IsAllowed(capability)
+            ? allowedDetail
+            : "Denied";
 
     private void Documents_Click(object sender, RoutedEventArgs e)
         => NavigateOffice("document");

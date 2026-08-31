@@ -6,7 +6,7 @@ using System.Text.Json;
 
 namespace KHZ.App.Trust;
 
-internal sealed class TrustStore : IActivityStore
+internal sealed class TrustStore : IActivityStore, IActivityReader
 {
     private const int CurrentSchemaVersion = 1;
 
@@ -327,6 +327,73 @@ internal sealed class TrustStore : IActivityStore
                 : JsonSerializer.Serialize(details));
 
         command.ExecuteNonQuery();
+    }
+
+    public IReadOnlyList<ActivityEvent> ReadRecent(
+        int limit = 200)
+    {
+        limit = Math.Clamp(limit, 1, 2000);
+
+        using var connection = OpenConnection();
+
+        using var command = connection.CreateCommand();
+
+        command.CommandText =
+            """
+            SELECT
+                id,
+                occurred_local,
+                timezone_id,
+                category,
+                action,
+                result,
+                target
+            FROM activity_event
+            ORDER BY id DESC
+            LIMIT $limit;
+            """;
+
+        command.Parameters.AddWithValue(
+            "$limit",
+            limit);
+
+        using var reader = command.ExecuteReader();
+
+        var rows =
+            new List<ActivityEvent>();
+
+        while (reader.Read())
+        {
+            rows.Add(
+                new ActivityEvent(
+                    Id: reader.GetInt64(0),
+                    OccurredLocal: reader.GetString(1),
+                    TimeZoneId: reader.GetString(2),
+                    Category: reader.GetString(3),
+                    Action: reader.GetString(4),
+                    Result: reader.GetString(5),
+                    Target:
+                        reader.IsDBNull(6)
+                            ? null
+                            : reader.GetString(6)));
+        }
+
+        return rows;
+    }
+
+    public string CheckIntegrity()
+    {
+        using var connection = OpenConnection();
+
+        IntegrityStatus =
+            Convert.ToString(
+                ExecuteScalar(
+                    connection,
+                    "PRAGMA integrity_check;"),
+                CultureInfo.InvariantCulture)
+            ?? "UNKNOWN";
+
+        return IntegrityStatus;
     }
 
     private SqliteConnection OpenConnection()
