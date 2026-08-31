@@ -1,0 +1,88 @@
+﻿<Window x:Class="KHZ.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="KHZ Workstation"
+        Width="1440"
+        Height="900"
+        MinWidth="1000"
+        MinHeight="650"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F5F5">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0"
+                Background="#181818"
+                BorderBrush="#303030"
+                BorderThickness="0,0,1,0">
+
+            <Grid Margin="14">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="64"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel>
+                    <TextBlock Text="KHZ"
+                               Foreground="White"
+                               FontSize="22"
+                               FontWeight="SemiBold"/>
+
+                    <TextBlock Text="WORKSTATION"
+                               Foreground="#9A9A9A"
+                               FontSize="10"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Margin="0,18,0,0">
+                    <Button Content="Home" Height="38" Margin="0,2"/>
+                    <Button Content="Files" Height="38" Margin="0,2"/>
+                    <Button Content="Documents" Height="38" Margin="0,2"/>
+                    <Button Content="Sheets" Height="38" Margin="0,2"/>
+                    <Button Content="Slides" Height="38" Margin="0,2"/>
+                    <Button Content="PDF" Height="38" Margin="0,2"/>
+                    <Button Content="Data" Height="38" Margin="0,2"/>
+                    <Button Content="Search" Height="38" Margin="0,2"/>
+                </StackPanel>
+
+                <TextBlock Grid.Row="2"
+                           Text="AI OFF"
+                           Foreground="#8FBC8F"
+                           FontSize="11"
+                           Margin="4,8"/>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="56"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Border Background="White"
+                    BorderBrush="#D8D8D8"
+                    BorderThickness="0,0,0,1">
+
+                <Grid Margin="20,0">
+                    <TextBlock Text="Sheets"
+                               VerticalAlignment="Center"
+                               FontSize="18"
+                               FontWeight="SemiBold"/>
+
+                    <TextBlock Text="Embedded Office Surface"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Center"
+                               Foreground="#707070"/>
+                </Grid>
+            </Border>
+
+            <wv2:WebView2 x:Name="OfficeWeb"
+                          Grid.Row="1"/>
+        </Grid>
+    </Grid>
+</Window>
