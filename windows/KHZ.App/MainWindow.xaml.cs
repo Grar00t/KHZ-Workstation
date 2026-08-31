@@ -46,8 +46,11 @@ public partial class MainWindow : Window
 
         await OfficeWeb.EnsureCoreWebView2Async(env);
 
+        OfficeWeb.CoreWebView2.NavigationStarting += OfficeNavigationStarting;
+        OfficeWeb.CoreWebView2.NewWindowRequested += OfficeNewWindowRequested;
+
         await RefreshRuntimeStatusAsync();
-        NavigateOffice("sheet");
+        ShowHome();
     }
 
     private async Task RefreshRuntimeStatusAsync()
@@ -59,6 +62,7 @@ public partial class MainWindow : Window
             if (response.IsSuccessStatusCode)
             {
                 RuntimeStatus.Text = "Local Office runtime online";
+                HomeRuntimeStatus.Text = "Online";
                 RuntimeDot.Fill = new SolidColorBrush(Color.FromRgb(72, 170, 90));
                 OfficeStatusText.Text = "OFFICE ONLINE";
                 OfficeStatusPill.Background =
@@ -71,6 +75,7 @@ public partial class MainWindow : Window
         }
 
         RuntimeStatus.Text = "Local Office runtime offline";
+        HomeRuntimeStatus.Text = "Offline";
         RuntimeDot.Fill = new SolidColorBrush(Color.FromRgb(190, 80, 80));
         OfficeStatusText.Text = "OFFICE OFFLINE";
         OfficeStatusPill.Background =
@@ -85,6 +90,7 @@ public partial class MainWindow : Window
         if (OfficeWeb.CoreWebView2 is null)
             return;
 
+        HomeSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         OfficeWeb.Visibility = Visibility.Visible;
 
@@ -101,8 +107,57 @@ public partial class MainWindow : Window
             $"http://localhost:8090/editor/{kind}");
     }
 
+    private void ShowHome()
+    {
+        OfficeWeb.Visibility = Visibility.Collapsed;
+        FilesSurface.Visibility = Visibility.Collapsed;
+        HomeSurface.Visibility = Visibility.Visible;
+        SectionTitle.Text = "Home";
+    }
+
+    private void Home_Click(object sender, RoutedEventArgs e)
+        => ShowHome();
+
+    private static bool IsAllowedOfficeNavigation(string uri)
+    {
+        if (!Uri.TryCreate(uri, UriKind.Absolute, out var target))
+            return false;
+
+        if (target.Scheme.Equals("about", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (!target.Scheme.Equals("http", StringComparison.OrdinalIgnoreCase) &&
+            !target.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var localHost =
+            target.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+            target.Host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase);
+
+        return localHost && target.Port == 8090;
+    }
+
+    private void OfficeNavigationStarting(
+        object? sender,
+        CoreWebView2NavigationStartingEventArgs e)
+    {
+        if (!IsAllowedOfficeNavigation(e.Uri))
+            e.Cancel = true;
+    }
+
+    private void OfficeNewWindowRequested(
+        object? sender,
+        CoreWebView2NewWindowRequestedEventArgs e)
+    {
+        e.Handled = true;
+
+        if (IsAllowedOfficeNavigation(e.Uri))
+            OfficeWeb.CoreWebView2?.Navigate(e.Uri);
+    }
+
     private void Files_Click(object sender, RoutedEventArgs e)
     {
+        HomeSurface.Visibility = Visibility.Collapsed;
         OfficeWeb.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Visible;
         SectionTitle.Text = "Files";

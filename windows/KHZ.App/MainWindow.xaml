@@ -89,6 +89,21 @@
                                FontWeight="SemiBold"
                                Margin="10,0,0,8"/>
 
+                    <Button x:Name="HomeButton"
+                            Style="{StaticResource NavButton}"
+                            Background="#303030"
+                            Click="Home_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⌂"
+                                       FontSize="17"
+                                       Width="28"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="Home"
+                                       VerticalAlignment="Center"
+                                       FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+
                     <Button x:Name="FilesButton"
                             Style="{StaticResource NavButton}"
                             Background="#303030"
@@ -270,6 +285,213 @@
             <Grid Grid.Row="1">
 
                 <wv2:WebView2 x:Name="OfficeWeb"/>
+
+                <ScrollViewer x:Name="HomeSurface"
+                              VerticalScrollBarVisibility="Auto"
+                              Background="#F5F5F5">
+
+                    <StackPanel MaxWidth="1080"
+                                Margin="34"
+                                HorizontalAlignment="Left">
+
+                        <TextBlock Text="KHZ Workstation"
+                                   FontSize="30"
+                                   FontWeight="SemiBold"
+                                   Foreground="#202020"/>
+
+                        <TextBlock Text="Local-first institutional workspace"
+                                   Margin="0,4,0,26"
+                                   FontSize="14"
+                                   Foreground="#707070"/>
+
+                        <TextBlock Text="OPEN"
+                                   FontSize="10"
+                                   FontWeight="SemiBold"
+                                   Foreground="#777777"
+                                   Margin="0,0,0,10"/>
+
+                        <WrapPanel>
+
+                            <Button Width="168"
+                                    Height="78"
+                                    Margin="0,0,10,10"
+                                    Background="#185ABD"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Click="Documents_Click">
+                                <StackPanel>
+                                    <TextBlock Text="Documents"
+                                               FontSize="15"
+                                               FontWeight="SemiBold"/>
+                                    <TextBlock Text="DOCX workspace"
+                                               FontSize="10"
+                                               Margin="0,5,0,0"
+                                               Opacity=".8"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Width="168"
+                                    Height="78"
+                                    Margin="0,0,10,10"
+                                    Background="#107C41"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Click="Sheets_Click">
+                                <StackPanel>
+                                    <TextBlock Text="Sheets"
+                                               FontSize="15"
+                                               FontWeight="SemiBold"/>
+                                    <TextBlock Text="XLSX workspace"
+                                               FontSize="10"
+                                               Margin="0,5,0,0"
+                                               Opacity=".8"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Width="168"
+                                    Height="78"
+                                    Margin="0,0,10,10"
+                                    Background="#C43E1C"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Click="Slides_Click">
+                                <StackPanel>
+                                    <TextBlock Text="Slides"
+                                               FontSize="15"
+                                               FontWeight="SemiBold"/>
+                                    <TextBlock Text="PPTX workspace"
+                                               FontSize="10"
+                                               Margin="0,5,0,0"
+                                               Opacity=".8"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Width="168"
+                                    Height="78"
+                                    Margin="0,0,10,10"
+                                    Background="#D13438"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Click="Pdf_Click">
+                                <StackPanel>
+                                    <TextBlock Text="PDF"
+                                               FontSize="15"
+                                               FontWeight="SemiBold"/>
+                                    <TextBlock Text="PDF workspace"
+                                               FontSize="10"
+                                               Margin="0,5,0,0"
+                                               Opacity=".8"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Width="168"
+                                    Height="78"
+                                    Margin="0,0,10,10"
+                                    Background="#303030"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Click="Files_Click">
+                                <StackPanel>
+                                    <TextBlock Text="Files"
+                                               FontSize="15"
+                                               FontWeight="SemiBold"/>
+                                    <TextBlock Text="Browse local files"
+                                               FontSize="10"
+                                               Margin="0,5,0,0"
+                                               Opacity=".8"/>
+                                </StackPanel>
+                            </Button>
+
+                        </WrapPanel>
+
+                        <TextBlock Text="SYSTEM"
+                                   FontSize="10"
+                                   FontWeight="SemiBold"
+                                   Foreground="#777777"
+                                   Margin="0,24,0,10"/>
+
+                        <Border Background="White"
+                                BorderBrush="#DDDDDD"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="20"
+                                Width="700"
+                                HorizontalAlignment="Left">
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="190"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="34"/>
+                                    <RowDefinition Height="34"/>
+                                    <RowDefinition Height="34"/>
+                                    <RowDefinition Height="34"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Text="Build"
+                                           Foreground="#777777"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1"
+                                           Text="Standard · Local"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center"/>
+
+                                <TextBlock Grid.Row="1"
+                                           Text="Office runtime"
+                                           Foreground="#777777"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock x:Name="HomeRuntimeStatus"
+                                           Grid.Row="1"
+                                           Grid.Column="1"
+                                           Text="Checking..."
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center"/>
+
+                                <TextBlock Grid.Row="2"
+                                           Text="Office boundary"
+                                           Foreground="#777777"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock Grid.Row="2"
+                                           Grid.Column="1"
+                                           Text="localhost:8090 only"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center"/>
+
+                                <TextBlock Grid.Row="3"
+                                           Text="External navigation"
+                                           Foreground="#777777"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock Grid.Row="3"
+                                           Grid.Column="1"
+                                           Text="Blocked"
+                                           FontWeight="SemiBold"
+                                           Foreground="#287A38"
+                                           VerticalAlignment="Center"/>
+
+                            </Grid>
+                        </Border>
+
+                        <Border Background="#EEEEEE"
+                                CornerRadius="5"
+                                Padding="14"
+                                Margin="0,22,0,0"
+                                Width="700"
+                                HorizontalAlignment="Left">
+
+                            <TextBlock TextWrapping="Wrap"
+                                       Foreground="#666666"
+                                       FontSize="11">
+                                <Run Text="Developer Preview · "/>
+                                <Run Text="KHZ Workstation is designed as a general workspace. "/>
+                                <Run Text="Business systems and institutional modules are added through replaceable integrations."/>
+                            </TextBlock>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
 
                 <Grid x:Name="FilesSurface"
                       Visibility="Collapsed"
