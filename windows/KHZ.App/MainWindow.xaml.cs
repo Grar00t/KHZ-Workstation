@@ -98,10 +98,15 @@ public partial class MainWindow : Window
     {
         var now = DateTimeOffset.Now;
 
+        var period =
+            now.Hour < 12
+                ? "ص"
+                : "م";
+
         ClockTimeText.Text =
-            now.ToString(
-                "HH:mm:ss",
-                CultureInfo.InvariantCulture);
+            $"{now.ToString(
+                "hh:mm:ss",
+                CultureInfo.InvariantCulture)} {period}";
 
         GregorianDateText.Text =
             now.ToString(
