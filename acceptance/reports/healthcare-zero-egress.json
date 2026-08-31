@@ -1,0 +1,36 @@
+{
+  "platform": "linux",
+  "scenario": "HEALTHCARE_ZERO_EGRESS",
+  "scenarios": [
+    {
+      "command": [
+        "/opt/pyvenv/bin/python3",
+        "scripts/no_ai_baseline.py"
+      ],
+      "exit_code": 0,
+      "stderr_tail": "",
+      "stdout_tail": "{\n  \"checks\": {\n    \"ai_kill_switch\": true,\n    \"audit\": true,\n    \"backup\": true,\n    \"data\": true,\n    \"files\": true,\n    \"git_read_only\": true,\n    \"restore\": true,\n    \"search\": true,\n    \"terminal\": true,\n    \"workspace_create\": true\n  },\n  \"office_roundtrip\": \"SEE acceptance/reports/office-roundtrip.json\",\n  \"scenario\": \"NO_AI_BASELINE\",\n  \"status\": \"PASSED\"\n}\n",
+      "unexpected_non_loopback": []
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "scripts/libreoffice_roundtrip.py"
+      ],
+      "exit_code": 0,
+      "stderr_tail": "",
+      "stdout_tail": "{\n  \"engine\": \"LibreOffice\",\n  \"files\": {\n    \"InstitutionalPresentation.pptx\": {\n      \"edit\": true,\n      \"error\": null,\n      \"marker_verified\": true,\n      \"open\": true,\n      \"reopen\": true,\n      \"save\": true\n    },\n    \"InstitutionalReport.docx\": {\n      \"edit\": true,\n      \"error\": null,\n      \"marker_verified\": true,\n      \"open\": true,\n      \"reopen\": true,\n      \"save\": true\n    },\n    \"InstitutionalWorkbook.xlsx\": {\n      \"edit\": true,\n      \"error\": null,\n      \"marker_verified\": true,\n      \"open\": true,\n      \"reopen\": true,\n      \"save\": true\n    }\n  },\n  \"pdf_local_open\": {\n    \"error\": null,\n    \"open\": true,\n    \"pages\": 4\n  },\n  \"platform\": \"linux\",\n  \"status\": \"VERIFIED\",\n  \"version\": \"LibreOffice 25.2.3.2 520(Build:2)\"\n}\n",
+      "unexpected_non_loopback": []
+    }
+  ],
+  "scope_note": "Process connection observation only. This is not Windows Firewall proof and does not establish Windows 11 egress behavior.",
+  "settings": {
+    "ai": false,
+    "git_network": false,
+    "healthcare_hardened": true,
+    "network_policy": "LOOPBACK_ONLY",
+    "updates": false
+  },
+  "status": "PASSED",
+  "unexpected_non_loopback": []
+}

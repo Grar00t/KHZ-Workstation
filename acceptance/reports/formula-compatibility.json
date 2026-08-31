@@ -1,0 +1,458 @@
+{
+  "engine": "LibreOffice 25.2.3.2",
+  "platform": "linux",
+  "rows": [
+    {
+      "cached_result": 15,
+      "formula_after": "=SUM(Data!A2:A6)",
+      "formula_before": "=SUM(Data!A2:A6)",
+      "function": "SUM",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 12,
+      "formula_after": "=SUMIF(Data!A2:A6,\">2\",Data!A2:A6)",
+      "formula_before": "=SUMIF(Data!A2:A6,\">2\",Data!A2:A6)",
+      "function": "SUMIF",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 400,
+      "formula_after": "=SUMIFS(Data!E2:E6,Data!D2:D6,\"OPS\")",
+      "formula_before": "=SUMIFS(Data!E2:E6,Data!D2:D6,\"OPS\")",
+      "function": "SUMIFS",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 3,
+      "formula_after": "=AVERAGE(Data!A2:A6)",
+      "formula_before": "=AVERAGE(Data!A2:A6)",
+      "function": "AVERAGE",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 4,
+      "formula_after": "=AVERAGEIF(Data!A2:A6,\">2\",Data!A2:A6)",
+      "formula_before": "=AVERAGEIF(Data!A2:A6,\">2\",Data!A2:A6)",
+      "function": "AVERAGEIF",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 200,
+      "formula_after": "=AVERAGEIFS(Data!E2:E6,Data!D2:D6,\"OPS\")",
+      "formula_before": "=AVERAGEIFS(Data!E2:E6,Data!D2:D6,\"OPS\")",
+      "function": "AVERAGEIFS",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 1,
+      "formula_after": "=MIN(Data!A2:A6)",
+      "formula_before": "=MIN(Data!A2:A6)",
+      "function": "MIN",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 5,
+      "formula_after": "=MAX(Data!A2:A6)",
+      "formula_before": "=MAX(Data!A2:A6)",
+      "function": "MAX",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 5,
+      "formula_after": "=COUNT(Data!A2:A6)",
+      "formula_before": "=COUNT(Data!A2:A6)",
+      "function": "COUNT",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 5,
+      "formula_after": "=COUNTA(Data!B2:B6)",
+      "formula_before": "=COUNTA(Data!B2:B6)",
+      "function": "COUNTA",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 2,
+      "formula_after": "=COUNTIF(Data!D2:D6,\"OPS\")",
+      "formula_before": "=COUNTIF(Data!D2:D6,\"OPS\")",
+      "function": "COUNTIF",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 1,
+      "formula_after": "=COUNTIFS(Data!D2:D6,\"OPS\",Data!A2:A6,\">1\")",
+      "formula_before": "=COUNTIFS(Data!D2:D6,\"OPS\",Data!A2:A6,\">1\")",
+      "function": "COUNTIFS",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 1.23,
+      "formula_after": "=ROUND(1.2345,2)",
+      "formula_before": "=ROUND(1.2345,2)",
+      "function": "ROUND",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 1.24,
+      "formula_after": "=ROUNDUP(1.231,2)",
+      "formula_before": "=ROUNDUP(1.231,2)",
+      "function": "ROUNDUP",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 1.23,
+      "formula_after": "=ROUNDDOWN(1.239,2)",
+      "formula_before": "=ROUNDDOWN(1.239,2)",
+      "function": "ROUNDDOWN",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 15,
+      "formula_after": "=SUBTOTAL(9,Data!A2:A6)",
+      "formula_before": "=SUBTOTAL(9,Data!A2:A6)",
+      "function": "SUBTOTAL",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": "yes",
+      "formula_after": "=IF(Data!A2=1,\"yes\",\"no\")",
+      "formula_before": "=IF(Data!A2=1,\"yes\",\"no\")",
+      "function": "IF",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": "one",
+      "formula_after": "=_xlfn.IFS(Data!A2=1,\"one\",Data!A2=2,\"two\",TRUE(),\"other\")",
+      "formula_before": "=_xlfn.IFS(Data!A2=1,\"one\",Data!A2=2,\"two\",TRUE,\"other\")",
+      "function": "IFS",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": true,
+      "formula_after": "=AND(Data!A2=1,Data!A3=2)",
+      "formula_before": "=AND(Data!A2=1,Data!A3=2)",
+      "function": "AND",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": true,
+      "formula_after": "=OR(Data!A2=9,Data!A3=2)",
+      "formula_before": "=OR(Data!A2=9,Data!A3=2)",
+      "function": "OR",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": true,
+      "formula_after": "=NOT(Data!A2=9)",
+      "formula_before": "=NOT(Data!A2=9)",
+      "function": "NOT",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": "handled",
+      "formula_after": "=IFERROR(1/0,\"handled\")",
+      "formula_before": "=IFERROR(1/0,\"handled\")",
+      "function": "IFERROR",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": "na",
+      "formula_after": "=_xlfn.IFNA(_xlfn.XLOOKUP(\"MISS\",Data!D2:D6,Data!E2:E6),\"na\")",
+      "formula_before": "=_xlfn.IFNA(_xlfn.XLOOKUP(\"MISS\",Data!D2:D6,Data!E2:E6),\"na\")",
+      "function": "IFNA",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 100,
+      "formula_after": "=_xlfn.XLOOKUP(\"OPS\",Data!D2:D6,Data!E2:E6,\"missing\")",
+      "formula_before": "=_xlfn.XLOOKUP(\"OPS\",Data!D2:D6,Data!E2:E6,\"missing\")",
+      "function": "XLOOKUP",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 100,
+      "formula_after": "=VLOOKUP(\"OPS\",Data!D2:E6,2,FALSE())",
+      "formula_before": "=VLOOKUP(\"OPS\",Data!D2:E6,2,FALSE)",
+      "function": "VLOOKUP",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 20,
+      "formula_after": "=HLOOKUP(\"B\",Horizontal!A1:E2,2,FALSE())",
+      "formula_before": "=HLOOKUP(\"B\",Horizontal!A1:E2,2,FALSE)",
+      "function": "HLOOKUP",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 300,
+      "formula_after": "=INDEX(Data!E2:E6,3)",
+      "formula_before": "=INDEX(Data!E2:E6,3)",
+      "function": "INDEX",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 2,
+      "formula_after": "=MATCH(\"FIN\",Data!D2:D6,0)",
+      "formula_before": "=MATCH(\"FIN\",Data!D2:D6,0)",
+      "function": "MATCH",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 2,
+      "formula_after": "=_xlfn.XMATCH(\"FIN\",Data!D2:D6,0)",
+      "formula_before": "=_xlfn.XMATCH(\"FIN\",Data!D2:D6,0)",
+      "function": "XMATCH",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 3,
+      "formula_after": "=OFFSET(Data!A2,2,0)",
+      "formula_before": "=OFFSET(Data!A2,2,0)",
+      "function": "OFFSET",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 3,
+      "formula_after": "=INDIRECT(\"Data!A4\")",
+      "formula_before": "=INDIRECT(\"Data!A4\")",
+      "function": "INDIRECT",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": "ab",
+      "formula_after": "=LEFT(\"abcdef\",2)",
+      "formula_before": "=LEFT(\"abcdef\",2)",
+      "function": "LEFT",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": "ef",
+      "formula_after": "=RIGHT(\"abcdef\",2)",
+      "formula_before": "=RIGHT(\"abcdef\",2)",
+      "function": "RIGHT",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": "bcd",
+      "formula_after": "=MID(\"abcdef\",2,3)",
+      "formula_before": "=MID(\"abcdef\",2,3)",
+      "function": "MID",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 6,
+      "formula_after": "=LEN(\"abcdef\")",
+      "formula_before": "=LEN(\"abcdef\")",
+      "function": "LEN",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": "a b",
+      "formula_after": "=TRIM(\"  a   b  \")",
+      "formula_before": "=TRIM(\"  a   b  \")",
+      "function": "TRIM",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": "alphabeta",
+      "formula_after": "=_xlfn.CONCAT(Data!B2:B3)",
+      "formula_before": "=_xlfn.CONCAT(Data!B2:B3)",
+      "function": "CONCAT",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": "alpha,beta,gamma",
+      "formula_after": "=_xlfn.TEXTJOIN(\",\",TRUE(),Data!B2:B4)",
+      "formula_before": "=_xlfn.TEXTJOIN(\",\",TRUE,Data!B2:B4)",
+      "function": "TEXTJOIN",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": "xbcxbc",
+      "formula_after": "=SUBSTITUTE(\"abcabc\",\"a\",\"x\")",
+      "formula_before": "=SUBSTITUTE(\"abcabc\",\"a\",\"x\")",
+      "function": "SUBSTITUTE",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 3,
+      "formula_after": "=FIND(\"cd\",\"abcdef\")",
+      "formula_before": "=FIND(\"cd\",\"abcdef\")",
+      "function": "FIND",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 3,
+      "formula_after": "=SEARCH(\"CD\",\"abcdef\")",
+      "formula_before": "=SEARCH(\"CD\",\"abcdef\")",
+      "function": "SEARCH",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": "1234.50",
+      "formula_after": "=TEXT(1234.5,\"0.00\")",
+      "formula_before": "=TEXT(1234.5,\"0.00\")",
+      "function": "TEXT",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": "2026-08-31 00:00:00",
+      "formula_after": "=DATE(2026,8,31)",
+      "formula_before": "=DATE(2026,8,31)",
+      "function": "DATE",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": "2026-08-31 00:00:00",
+      "formula_after": "=TODAY()",
+      "formula_before": "=TODAY()",
+      "function": "TODAY",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": "2026-08-31 13:37:08.261000",
+      "formula_after": "=NOW()",
+      "formula_before": "=NOW()",
+      "function": "NOW",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 2026,
+      "formula_after": "=YEAR(Data!C2)",
+      "formula_before": "=YEAR(Data!C2)",
+      "function": "YEAR",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 8,
+      "formula_after": "=MONTH(Data!C2)",
+      "formula_before": "=MONTH(Data!C2)",
+      "function": "MONTH",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 27,
+      "formula_after": "=DAY(Data!C2)",
+      "formula_before": "=DAY(Data!C2)",
+      "function": "DAY",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 46268,
+      "formula_after": "=WORKDAY(Data!C2,5)",
+      "formula_before": "=WORKDAY(Data!C2,5)",
+      "function": "WORKDAY",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 3,
+      "formula_after": "=NETWORKDAYS(Data!C2,Data!C6)",
+      "formula_before": "=NETWORKDAYS(Data!C2,Data!C6)",
+      "function": "NETWORKDAYS",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 3,
+      "formula_after": "=_xlfn._xlws.FILTER(Data!A2:A6,Data!A2:A6>2)",
+      "formula_before": "=_xlfn._xlws.FILTER(Data!A2:A6,Data!A2:A6>2)",
+      "function": "FILTER",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": "alpha",
+      "formula_after": "=_xlfn._xlws.SORT(Data!B2:B6)",
+      "formula_before": "=_xlfn._xlws.SORT(Data!B2:B6)",
+      "function": "SORT",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": "#NAME?",
+      "formula_after": "=_xlfn._xlws.sortby(Data!B2:B6,Data!A2:A6,-1)",
+      "formula_before": "=_xlfn._xlws.SORTBY(Data!B2:B6,Data!A2:A6,-1)",
+      "function": "SORTBY",
+      "status": "PARTIAL"
+    },
+    {
+      "cached_result": "OPS",
+      "formula_after": "=_xlfn.UNIQUE(Data!D2:D6)",
+      "formula_before": "=_xlfn.UNIQUE(Data!D2:D6)",
+      "function": "UNIQUE",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 10,
+      "formula_after": "=_xlfn.SEQUENCE(3,1,10,2)",
+      "formula_before": "=_xlfn.SEQUENCE(3,1,10,2)",
+      "function": "SEQUENCE",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": "#NAME?",
+      "formula_after": "=_xlfn.take(Data!A2:A6,2)",
+      "formula_before": "=_xlfn.TAKE(Data!A2:A6,2)",
+      "function": "TAKE",
+      "status": "PARTIAL"
+    },
+    {
+      "cached_result": "#NAME?",
+      "formula_after": "=_xlfn.drop(Data!A2:A6,2)",
+      "formula_before": "=_xlfn.DROP(Data!A2:A6,2)",
+      "function": "DROP",
+      "status": "PARTIAL"
+    },
+    {
+      "cached_result": "#NAME?",
+      "formula_after": "=_xlfn.hstack(Data!A2:A3,Data!B2:B3)",
+      "formula_before": "=_xlfn.HSTACK(Data!A2:A3,Data!B2:B3)",
+      "function": "HSTACK",
+      "status": "PARTIAL"
+    },
+    {
+      "cached_result": "#NAME?",
+      "formula_after": "=_xlfn.vstack(Data!A2:A3,Data!A4:A5)",
+      "formula_before": "=_xlfn.VSTACK(Data!A2:A3,Data!A4:A5)",
+      "function": "VSTACK",
+      "status": "PARTIAL"
+    },
+    {
+      "cached_result": 3,
+      "formula_after": "=Data!A2+Data!A3",
+      "formula_before": "=Data!A2+Data!A3",
+      "function": "RELATIVE_REF",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 3,
+      "formula_after": "=Data!$A$2+Data!$A$3",
+      "formula_before": "=Data!$A$2+Data!$A$3",
+      "function": "ABSOLUTE_REF",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 3,
+      "formula_after": "=Data!$A2+Data!A$3",
+      "formula_before": "=Data!$A2+Data!A$3",
+      "function": "MIXED_REF",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 100,
+      "formula_after": "=Data!E2",
+      "formula_before": "=Data!E2",
+      "function": "CROSS_SHEET_REF",
+      "status": "VERIFIED"
+    },
+    {
+      "cached_result": 15,
+      "formula_after": "=SUM(Values)",
+      "formula_before": "=SUM(Values)",
+      "function": "NAMED_RANGE",
+      "status": "VERIFIED"
+    }
+  ],
+  "summary": {
+    "PARTIAL": 5,
+    "VERIFIED": 59
+  }
+}

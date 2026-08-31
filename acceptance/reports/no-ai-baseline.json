@@ -1,0 +1,17 @@
+{
+  "checks": {
+    "ai_kill_switch": true,
+    "audit": true,
+    "backup": true,
+    "data": true,
+    "files": true,
+    "git_read_only": true,
+    "restore": true,
+    "search": true,
+    "terminal": false,
+    "workspace_create": true
+  },
+  "office_roundtrip": "SEE acceptance/reports/office-roundtrip.json",
+  "scenario": "NO_AI_BASELINE",
+  "status": "FAILED"
+}

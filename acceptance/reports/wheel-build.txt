@@ -1,0 +1,10 @@
+WARNING: The directory '/home/oai/.cache/pip' or its parent directory is not owned or is not writable by the current user. The cache has been disabled. Check the permissions and owner of that directory. If executing pip with sudo, you should use sudo's -H flag.
+Processing /mnt/data/KHZ-Workstation
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: khz-workstation
+  Building wheel for khz-workstation (pyproject.toml): started
+  Building wheel for khz-workstation (pyproject.toml): finished with status 'done'
+  Created wheel for khz-workstation: filename=khz_workstation-0.1.0-py3-none-any.whl size=104700 sha256=10eb1f938b595b66db50cfc29c0fadff11e007c0793c2d84c434c8bf4efd0737
+  Stored in directory: /tmp/pip-ephem-wheel-cache-ei1xcwls/wheels/85/3a/eb/fa962887a7184330ff12f9a1d30a8f39dee80827a085eb7f23
+Successfully built khz-workstation

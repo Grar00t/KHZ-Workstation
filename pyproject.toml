@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "khz-workstation"
+version = "0.1.0"
+description = "Local-first professional workstation shell with deterministic tools and replaceable Office integration."
+requires-python = ">=3.11"
+license = {text = "Apache-2.0"}
+authors = [{name = "KHZ"}]
+dependencies = []
+
+[project.optional-dependencies]
+automation = [
+  "openpyxl==3.1.5",
+  "python-docx==1.2.0",
+  "python-pptx==1.0.2"
+]
+
+[project.scripts]
+khz-workstation = "khz_workstation.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+khz_workstation = ["assets/templates/*"]

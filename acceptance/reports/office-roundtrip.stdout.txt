@@ -1,0 +1,37 @@
+{
+  "engine": "LibreOffice",
+  "files": {
+    "InstitutionalPresentation.pptx": {
+      "edit": true,
+      "error": null,
+      "marker_verified": true,
+      "open": true,
+      "reopen": true,
+      "save": true
+    },
+    "InstitutionalReport.docx": {
+      "edit": true,
+      "error": null,
+      "marker_verified": true,
+      "open": true,
+      "reopen": true,
+      "save": true
+    },
+    "InstitutionalWorkbook.xlsx": {
+      "edit": true,
+      "error": null,
+      "marker_verified": true,
+      "open": true,
+      "reopen": true,
+      "save": true
+    }
+  },
+  "pdf_local_open": {
+    "error": null,
+    "open": true,
+    "pages": 4
+  },
+  "platform": "linux",
+  "status": "VERIFIED",
+  "version": "LibreOffice 25.2.3.2 520(Build:2)"
+}

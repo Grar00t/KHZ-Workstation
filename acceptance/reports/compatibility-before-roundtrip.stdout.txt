@@ -1,0 +1,57 @@
+{
+  "docx": {
+    "before": {
+      "animations": 0,
+      "charts": 0,
+      "comments": 1,
+      "entries": 21,
+      "footers": 1,
+      "headers": 1,
+      "notes_slides": 0,
+      "pivot_cache": 0,
+      "pivot_tables": 0,
+      "slide_masters": 0,
+      "toc_fields": 1,
+      "tracked_insertions": 1,
+      "transitions": 0
+    }
+  },
+  "pptx": {
+    "before": {
+      "animations": 0,
+      "charts": 1,
+      "comments": 0,
+      "entries": 67,
+      "footers": 0,
+      "headers": 0,
+      "notes_slides": 6,
+      "pivot_cache": 0,
+      "pivot_tables": 0,
+      "slide_masters": 1,
+      "transitions": 0
+    }
+  },
+  "xlsx": {
+    "before": {
+      "charts_openpyxl": 1,
+      "comments_openpyxl": 1,
+      "conditional_formatting_ranges": 2,
+      "defined_names": 1,
+      "formulas": 4807,
+      "pivot_cache_xml": 2,
+      "pivot_tables_xml": 1,
+      "protected_sheets": 1,
+      "sheet_names": [
+        "Summary",
+        "Transactions",
+        "Departments",
+        "Lookup",
+        "Notes",
+        "Pivot"
+      ],
+      "tables": 1,
+      "validations": 1,
+      "worksheets": 6
+    }
+  }
+}

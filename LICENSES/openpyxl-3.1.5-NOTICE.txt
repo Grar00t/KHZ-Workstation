@@ -1,0 +1,7 @@
+openpyxl 3.1.5
+
+The installed Python distribution metadata in the KHZ build environment declares:
+
+    License: MIT
+
+The installed wheel did not expose a standalone LICENSE file through importlib.metadata. KHZ does not vendor openpyxl source code. Before redistributing a Python runtime that includes openpyxl, the deployment owner must obtain and retain the authoritative license notice from the approved openpyxl distribution/source package.

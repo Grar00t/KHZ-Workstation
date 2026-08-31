@@ -1,0 +1,181 @@
+{
+  "automated_tests": {
+    "count": 22,
+    "resource_warning_mode": true,
+    "status": "PASSED"
+  },
+  "build_environment": {
+    "git": "git version 2.47.3",
+    "libreoffice": "LibreOffice 25.2.3.2 520(Build:2)",
+    "platform": "Linux-6.18.35-x86_64-with-glibc2.41",
+    "python": "3.13.5",
+    "windows_11_runtime": "UNVERIFIED"
+  },
+  "compliance_claim": "NONE",
+  "dependency_restore": {
+    "detail": "Core host has no mandatory third-party runtime dependencies. Pinned automation/test dependencies were already installed. An earlier isolated wheel build attempted package-index access and failed because DNS/index access was unavailable; the final --no-build-isolation wheel build using installed tooling passed.",
+    "status": "PARTIAL"
+  },
+  "formula_matrix": {
+    "PARTIAL": 5,
+    "VERIFIED": 59
+  },
+  "healthcare_zero_egress_linux_process_observation": "PASSED",
+  "healthcare_zero_egress_windows": "UNVERIFIED",
+  "host_compile": "PASSED",
+  "no_ai_baseline": "PASSED",
+  "office_roundtrip": {
+    "engine": "LibreOffice",
+    "files": {
+      "InstitutionalPresentation.pptx": {
+        "edit": true,
+        "error": null,
+        "marker_verified": true,
+        "open": true,
+        "reopen": true,
+        "save": true
+      },
+      "InstitutionalReport.docx": {
+        "edit": true,
+        "error": null,
+        "marker_verified": true,
+        "open": true,
+        "reopen": true,
+        "save": true
+      },
+      "InstitutionalWorkbook.xlsx": {
+        "edit": true,
+        "error": null,
+        "marker_verified": true,
+        "open": true,
+        "reopen": true,
+        "save": true
+      }
+    },
+    "pdf_local_open": {
+      "error": null,
+      "open": true,
+      "pages": 4
+    },
+    "platform": "linux",
+    "status": "VERIFIED",
+    "version": "LibreOffice 25.2.3.2 520(Build:2)"
+  },
+  "pdf_export": {
+    "engine": "LibreOffice 25.2.3.2 520(Build:2)",
+    "platform": "Linux build environment",
+    "results": [
+      {
+        "output": "acceptance/pdf_exports/InstitutionalReport.pdf",
+        "pages": 3,
+        "size": 53449,
+        "source": "InstitutionalReport.docx",
+        "status": "VERIFIED"
+      },
+      {
+        "output": "acceptance/pdf_exports/InstitutionalWorkbook.pdf",
+        "pages": 59,
+        "size": 3254301,
+        "source": "InstitutionalWorkbook.xlsx",
+        "status": "VERIFIED"
+      },
+      {
+        "output": "acceptance/pdf_exports/InstitutionalPresentation.pdf",
+        "pages": 6,
+        "size": 39746,
+        "source": "InstitutionalPresentation.pptx",
+        "status": "VERIFIED"
+      }
+    ]
+  },
+  "real_ui_captures": {
+    "khz": 11,
+    "office": 4,
+    "status": "VERIFIED on Linux/Xvfb"
+  },
+  "report_time_utc": "2026-08-31T13:38:09.178452+00:00",
+  "ui_runtime_linux_xvfb": "PASSED",
+  "wheel_build": {
+    "installed_ui_smoke": "PASSED",
+    "packaged_templates": "PASSED",
+    "sha256": "10eb1f938b595b66db50cfc29c0fadff11e007c0793c2d84c434c8bf4efd0737",
+    "status": "PASSED"
+  },
+  "windows_installer": "UNVERIFIED",
+  "xlsx_structure": {
+    "charts_openpyxl": {
+      "after": 1,
+      "before": 1,
+      "same": true
+    },
+    "comments_openpyxl": {
+      "after": 1,
+      "before": 1,
+      "same": true
+    },
+    "conditional_formatting_ranges": {
+      "after": 2,
+      "before": 2,
+      "same": true
+    },
+    "defined_names": {
+      "after": 1,
+      "before": 1,
+      "same": true
+    },
+    "formulas": {
+      "after": 4807,
+      "before": 4807,
+      "same": true
+    },
+    "pivot_cache_xml": {
+      "after": 2,
+      "before": 2,
+      "same": true
+    },
+    "pivot_tables_xml": {
+      "after": 1,
+      "before": 1,
+      "same": true
+    },
+    "protected_sheets": {
+      "after": 1,
+      "before": 1,
+      "same": true
+    },
+    "sheet_names": {
+      "after": [
+        "Summary",
+        "Transactions",
+        "Departments",
+        "Lookup",
+        "Notes",
+        "Pivot"
+      ],
+      "before": [
+        "Summary",
+        "Transactions",
+        "Departments",
+        "Lookup",
+        "Notes",
+        "Pivot"
+      ],
+      "same": true
+    },
+    "tables": {
+      "after": 1,
+      "before": 1,
+      "same": true
+    },
+    "validations": {
+      "after": 1,
+      "before": 1,
+      "same": true
+    },
+    "worksheets": {
+      "after": 6,
+      "before": 6,
+      "same": true
+    }
+  }
+}

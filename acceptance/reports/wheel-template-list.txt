@@ -1,0 +1,3 @@
+    36577  2026-08-31 13:17   khz_workstation/assets/templates/BlankDocument.docx
+    28213  2026-08-31 13:17   khz_workstation/assets/templates/BlankPresentation.pptx
+     4784  2026-08-31 13:17   khz_workstation/assets/templates/BlankWorkbook.xlsx

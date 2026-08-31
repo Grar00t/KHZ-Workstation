@@ -1,0 +1,27 @@
+test_ai_off_blocks_context_release (test_core.AITests.test_ai_off_blocks_context_release) ... ok
+test_health_data_denied_by_default (test_core.AITests.test_health_data_denied_by_default) ... ok
+test_model_action_schema_and_workspace_enforced (test_core.AITests.test_model_action_schema_and_workspace_enforced) ... ok
+test_bulk_table_creation_rolls_back_on_invalid_row (test_core.DataWorkspaceTests.test_bulk_table_creation_rolls_back_on_invalid_row) ... ok
+test_csv_import_filter_sort_and_export (test_core.DataWorkspaceTests.test_csv_import_filter_sort_and_export) ... ok
+test_atomic_file_save_snapshot_backup_restore (test_core.FileBackupRestoreTests.test_atomic_file_save_snapshot_backup_restore) ... ok
+test_backup_failure_reports_failure (test_core.FileBackupRestoreTests.test_backup_failure_reports_failure) ... ok
+test_restore_rejects_corrupt_archive (test_core.FileBackupRestoreTests.test_restore_rejects_corrupt_archive) ... ok
+test_english_is_canonical_and_arabic_is_rtl_metadata (test_core.LocalizationTests.test_english_is_canonical_and_arabic_is_rtl_metadata) ... ok
+test_deny_policy_rejects_network (test_core.NetworkTests.test_deny_policy_rejects_network) ... ok
+test_loopback_only (test_core.NetworkTests.test_loopback_only) ... ok
+test_audit_chain_and_tamper_detection (test_core.PersistenceTests.test_audit_chain_and_tamper_detection) ... ok
+test_audit_write_failure_is_not_silenced (test_core.PersistenceTests.test_audit_write_failure_is_not_silenced) ... ok
+test_database_transaction_rolls_back (test_core.PersistenceTests.test_database_transaction_rolls_back) ... ok
+test_session_lock_delegates_to_os_boundary (test_core.SessionTests.test_session_lock_delegates_to_os_boundary) ... ok
+test_terminal_requires_authorization (test_core.ToolTests.test_terminal_requires_authorization) ... ok
+test_absolute_path_rejected (test_core.WorkspaceSecurityTests.test_absolute_path_rejected) ... ok
+test_all_workspace_profiles_are_supported (test_core.WorkspaceSecurityTests.test_all_workspace_profiles_are_supported) ... ok
+test_healthcare_profile_forces_security_defaults (test_core.WorkspaceSecurityTests.test_healthcare_profile_forces_security_defaults) ... ok
+test_path_traversal_rejected (test_core.WorkspaceSecurityTests.test_path_traversal_rejected) ... ok
+test_symlink_escape_rejected_when_supported (test_core.WorkspaceSecurityTests.test_symlink_escape_rejected_when_supported) ... ok
+test_deterministic_cross_office_workflows (test_workflows.CrossOfficeWorkflowTests.test_deterministic_cross_office_workflows) ... ok
+
+----------------------------------------------------------------------
+Ran 22 tests in 0.107s
+
+OK

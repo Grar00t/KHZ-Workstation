@@ -1,0 +1,94 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "KHZ-Workstation-source-sbom",
+  "documentNamespace": "https://khz.invalid/spdx/KHZ-Workstation/0.1.0/2026-08-31",
+  "creationInfo": {
+    "created": "2026-08-31T13:20:00Z",
+    "creators": [
+      "Tool: KHZ Workstation build assembly"
+    ]
+  },
+  "packages": [
+    {
+      "name": "khz-workstation",
+      "SPDXID": "SPDXRef-Package-KHZ",
+      "versionInfo": "0.1.0",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0"
+    },
+    {
+      "name": "LibreOffice",
+      "SPDXID": "SPDXRef-Package-LibreOffice-external",
+      "versionInfo": "25.2.3.2-tested-linux",
+      "downloadLocation": "https://www.libreoffice.org/download/",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MPL-2.0",
+      "comment": "External engine; not bundled in KHZ ZIP. LibreOffice includes additional component licenses."
+    },
+    {
+      "name": "openpyxl",
+      "SPDXID": "SPDXRef-Package-openpyxl",
+      "versionInfo": "3.1.5",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "comment": "Optional deterministic automation dependency; not vendored in KHZ ZIP."
+    },
+    {
+      "name": "python-docx",
+      "SPDXID": "SPDXRef-Package-python-docx",
+      "versionInfo": "1.2.0",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "comment": "Optional deterministic automation dependency; not vendored in KHZ ZIP."
+    },
+    {
+      "name": "python-pptx",
+      "SPDXID": "SPDXRef-Package-python-pptx",
+      "versionInfo": "1.0.2",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "comment": "Optional deterministic automation dependency; not vendored in KHZ ZIP."
+    },
+    {
+      "name": "reportlab",
+      "SPDXID": "SPDXRef-Package-reportlab",
+      "versionInfo": "4.4.9",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-3-Clause",
+      "comment": "Development/test dependency only."
+    },
+    {
+      "name": "psutil",
+      "SPDXID": "SPDXRef-Package-psutil",
+      "versionInfo": "7.2.2",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-3-Clause",
+      "comment": "Development/test dependency only."
+    },
+    {
+      "name": "Pillow",
+      "SPDXID": "SPDXRef-Package-Pillow",
+      "versionInfo": "12.3.0",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT-CMU",
+      "comment": "Development/test dependency only."
+    }
+  ]
+}

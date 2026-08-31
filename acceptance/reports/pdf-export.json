@@ -1,0 +1,27 @@
+{
+  "engine": "LibreOffice 25.2.3.2 520(Build:2)",
+  "platform": "Linux build environment",
+  "results": [
+    {
+      "source": "InstitutionalReport.docx",
+      "output": "acceptance/pdf_exports/InstitutionalReport.pdf",
+      "size": 53449,
+      "pages": 3,
+      "status": "VERIFIED"
+    },
+    {
+      "source": "InstitutionalWorkbook.xlsx",
+      "output": "acceptance/pdf_exports/InstitutionalWorkbook.pdf",
+      "size": 3254301,
+      "pages": 59,
+      "status": "VERIFIED"
+    },
+    {
+      "source": "InstitutionalPresentation.pptx",
+      "output": "acceptance/pdf_exports/InstitutionalPresentation.pdf",
+      "size": 39746,
+      "pages": 6,
+      "status": "VERIFIED"
+    }
+  ]
+}

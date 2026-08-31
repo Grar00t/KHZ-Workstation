@@ -1,0 +1,9 @@
+{
+  "VERIFIED": 59,
+  "PARTIAL": 5
+}
+SORTBY =_xlfn._xlws.sortby(Data!B2:B6,Data!A2:A6,-1) #NAME?
+TAKE =_xlfn.take(Data!A2:A6,2) #NAME?
+DROP =_xlfn.drop(Data!A2:A6,2) #NAME?
+HSTACK =_xlfn.hstack(Data!A2:A3,Data!B2:B3) #NAME?
+VSTACK =_xlfn.vstack(Data!A2:A3,Data!A4:A5) #NAME?

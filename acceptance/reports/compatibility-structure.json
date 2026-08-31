@@ -1,0 +1,306 @@
+{
+  "docx": {
+    "after": {
+      "animations": 0,
+      "charts": 0,
+      "comments": 1,
+      "entries": 27,
+      "footers": 5,
+      "headers": 5,
+      "notes_slides": 0,
+      "pivot_cache": 0,
+      "pivot_tables": 0,
+      "slide_masters": 0,
+      "toc_fields": 0,
+      "tracked_insertions": 1,
+      "transitions": 0
+    },
+    "before": {
+      "animations": 0,
+      "charts": 0,
+      "comments": 1,
+      "entries": 21,
+      "footers": 1,
+      "headers": 1,
+      "notes_slides": 0,
+      "pivot_cache": 0,
+      "pivot_tables": 0,
+      "slide_masters": 0,
+      "toc_fields": 1,
+      "tracked_insertions": 1,
+      "transitions": 0
+    },
+    "compare": {
+      "animations": {
+        "after": 0,
+        "before": 0,
+        "same": true
+      },
+      "charts": {
+        "after": 0,
+        "before": 0,
+        "same": true
+      },
+      "comments": {
+        "after": 1,
+        "before": 1,
+        "same": true
+      },
+      "entries": {
+        "after": 27,
+        "before": 21,
+        "same": false
+      },
+      "footers": {
+        "after": 5,
+        "before": 1,
+        "same": false
+      },
+      "headers": {
+        "after": 5,
+        "before": 1,
+        "same": false
+      },
+      "notes_slides": {
+        "after": 0,
+        "before": 0,
+        "same": true
+      },
+      "pivot_cache": {
+        "after": 0,
+        "before": 0,
+        "same": true
+      },
+      "pivot_tables": {
+        "after": 0,
+        "before": 0,
+        "same": true
+      },
+      "slide_masters": {
+        "after": 0,
+        "before": 0,
+        "same": true
+      },
+      "toc_fields": {
+        "after": 0,
+        "before": 1,
+        "same": false
+      },
+      "tracked_insertions": {
+        "after": 1,
+        "before": 1,
+        "same": true
+      },
+      "transitions": {
+        "after": 0,
+        "before": 0,
+        "same": true
+      }
+    }
+  },
+  "pptx": {
+    "after": {
+      "animations": 0,
+      "charts": 1,
+      "comments": 0,
+      "entries": 62,
+      "footers": 0,
+      "headers": 0,
+      "notes_slides": 6,
+      "pivot_cache": 0,
+      "pivot_tables": 0,
+      "slide_masters": 1,
+      "transitions": 6
+    },
+    "before": {
+      "animations": 0,
+      "charts": 1,
+      "comments": 0,
+      "entries": 67,
+      "footers": 0,
+      "headers": 0,
+      "notes_slides": 6,
+      "pivot_cache": 0,
+      "pivot_tables": 0,
+      "slide_masters": 1,
+      "transitions": 6
+    },
+    "compare": {
+      "animations": {
+        "after": 0,
+        "before": 0,
+        "same": true
+      },
+      "charts": {
+        "after": 1,
+        "before": 1,
+        "same": true
+      },
+      "comments": {
+        "after": 0,
+        "before": 0,
+        "same": true
+      },
+      "entries": {
+        "after": 62,
+        "before": 67,
+        "same": false
+      },
+      "footers": {
+        "after": 0,
+        "before": 0,
+        "same": true
+      },
+      "headers": {
+        "after": 0,
+        "before": 0,
+        "same": true
+      },
+      "notes_slides": {
+        "after": 6,
+        "before": 6,
+        "same": true
+      },
+      "pivot_cache": {
+        "after": 0,
+        "before": 0,
+        "same": true
+      },
+      "pivot_tables": {
+        "after": 0,
+        "before": 0,
+        "same": true
+      },
+      "slide_masters": {
+        "after": 1,
+        "before": 1,
+        "same": true
+      },
+      "transitions": {
+        "after": 6,
+        "before": 6,
+        "same": true
+      }
+    }
+  },
+  "xlsx": {
+    "after": {
+      "charts_openpyxl": 1,
+      "comments_openpyxl": 1,
+      "conditional_formatting_ranges": 2,
+      "defined_names": 1,
+      "formulas": 4807,
+      "pivot_cache_xml": 2,
+      "pivot_tables_xml": 1,
+      "protected_sheets": 1,
+      "sheet_names": [
+        "Summary",
+        "Transactions",
+        "Departments",
+        "Lookup",
+        "Notes",
+        "Pivot"
+      ],
+      "tables": 1,
+      "validations": 1,
+      "worksheets": 6
+    },
+    "before": {
+      "charts_openpyxl": 1,
+      "comments_openpyxl": 1,
+      "conditional_formatting_ranges": 2,
+      "defined_names": 1,
+      "formulas": 4807,
+      "pivot_cache_xml": 2,
+      "pivot_tables_xml": 1,
+      "protected_sheets": 1,
+      "sheet_names": [
+        "Summary",
+        "Transactions",
+        "Departments",
+        "Lookup",
+        "Notes",
+        "Pivot"
+      ],
+      "tables": 1,
+      "validations": 1,
+      "worksheets": 6
+    },
+    "compare": {
+      "charts_openpyxl": {
+        "after": 1,
+        "before": 1,
+        "same": true
+      },
+      "comments_openpyxl": {
+        "after": 1,
+        "before": 1,
+        "same": true
+      },
+      "conditional_formatting_ranges": {
+        "after": 2,
+        "before": 2,
+        "same": true
+      },
+      "defined_names": {
+        "after": 1,
+        "before": 1,
+        "same": true
+      },
+      "formulas": {
+        "after": 4807,
+        "before": 4807,
+        "same": true
+      },
+      "pivot_cache_xml": {
+        "after": 2,
+        "before": 2,
+        "same": true
+      },
+      "pivot_tables_xml": {
+        "after": 1,
+        "before": 1,
+        "same": true
+      },
+      "protected_sheets": {
+        "after": 1,
+        "before": 1,
+        "same": true
+      },
+      "sheet_names": {
+        "after": [
+          "Summary",
+          "Transactions",
+          "Departments",
+          "Lookup",
+          "Notes",
+          "Pivot"
+        ],
+        "before": [
+          "Summary",
+          "Transactions",
+          "Departments",
+          "Lookup",
+          "Notes",
+          "Pivot"
+        ],
+        "same": true
+      },
+      "tables": {
+        "after": 1,
+        "before": 1,
+        "same": true
+      },
+      "validations": {
+        "after": 1,
+        "before": 1,
+        "same": true
+      },
+      "worksheets": {
+        "after": 6,
+        "before": 6,
+        "same": true
+      }
+    }
+  }
+}
