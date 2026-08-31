@@ -56,6 +56,9 @@ public partial class MainWindow : Window
         _activity = _trust;
         _activityReader = _trust;
 
+        ActivitySurface.Configure(
+            _activityReader);
+
         _clockTimer.Tick += (_, _) => UpdateClock();
 
         UpdateClock();
@@ -317,7 +320,7 @@ public partial class MainWindow : Window
                     x.Name,
                     x.FullName,
                     "Folder",
-                    x.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss"),
+                    x.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
                     "",
                     true));
 
@@ -326,7 +329,7 @@ public partial class MainWindow : Window
                     x.Name,
                     x.FullName,
                     x.Extension.TrimStart('.').ToUpperInvariant(),
-                    x.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss"),
+                    x.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
                     FormatSize(x.Length),
                     false));
 
@@ -451,23 +454,7 @@ public partial class MainWindow : Window
         ActivitySurface.Visibility = Visibility.Visible;
         SectionTitle.Text = "Activity";
 
-        RefreshActivitySurface();
-    }
-
-    private void RefreshActivity_Click(
-        object sender,
-        RoutedEventArgs e)
-        => RefreshActivitySurface();
-
-    private void RefreshActivitySurface()
-    {
-        var rows =
-            _activityReader.ReadRecent(250);
-
-        ActivityGrid.ItemsSource = rows;
-
-        ActivityCountText.Text =
-            $"{rows.Count} recent local events";
+        ActivitySurface.RefreshActivity();
     }
 
     private void Security_Click(
