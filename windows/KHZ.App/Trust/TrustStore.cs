@@ -8,7 +8,7 @@ namespace KHZ.App.Trust;
 
 internal sealed class TrustStore : IActivityStore, IActivityReader
 {
-    private const int CurrentSchemaVersion = 2;
+    private const int CurrentSchemaVersion = 3;
 
     public string DatabasePath { get; }
 
@@ -141,6 +141,27 @@ internal sealed class TrustStore : IActivityStore, IActivityReader
                 auth_mode     TEXT NOT NULL DEFAULT 'not_configured',
                 updated_utc   TEXT NOT NULL,
                 updated_local TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS local_task
+            (
+                task_id        TEXT PRIMARY KEY NOT NULL,
+                title          TEXT NOT NULL
+                               CHECK(length(trim(title)) BETWEEN 1 AND 300),
+                due_local_date TEXT,
+                is_completed   INTEGER NOT NULL DEFAULT 0
+                               CHECK(is_completed IN (0, 1)),
+                created_utc    TEXT NOT NULL,
+                created_local  TEXT NOT NULL,
+                updated_utc    TEXT NOT NULL,
+                updated_local  TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS
+                ix_local_task_status_due
+            ON local_task(
+                is_completed,
+                due_local_date
             );
             """;
 
