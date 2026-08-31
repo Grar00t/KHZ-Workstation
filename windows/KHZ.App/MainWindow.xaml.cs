@@ -1,3 +1,6 @@
+using System.Windows.Threading;
+using System.Globalization;
+using KHZ.App.Trust;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
 using System;
@@ -14,6 +17,23 @@ namespace KHZ.App;
 
 public partial class MainWindow : Window
 {
+    private readonly DispatcherTimer _clockTimer =
+        new()
+        {
+            Interval = TimeSpan.FromSeconds(1)
+        };
+
+    private static readonly CultureInfo GregorianClockCulture =
+        CultureInfo.GetCultureInfo("en-US");
+
+    private static readonly CultureInfo HijriClockCulture =
+        CreateHijriClockCulture();
+
+    private readonly TrustStore _trust = new();
+
+    private readonly CapabilityPolicy _policy =
+        CapabilityPolicy.CreateInstitutionalDefault();
+
     private static readonly Uri GatewayHealth =
         new("http://127.0.0.1:8090/health");
 
@@ -28,11 +48,62 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        _clockTimer.Tick += (_, _) => UpdateClock();
+
+        UpdateClock();
+        _clockTimer.Start();
         Loaded += MainWindow_Loaded;
+    }
+
+    private static CultureInfo CreateHijriClockCulture()
+    {
+        var culture =
+            (CultureInfo)CultureInfo
+                .GetCultureInfo("ar-SA")
+                .Clone();
+
+        culture.DateTimeFormat.Calendar =
+            new UmAlQuraCalendar();
+
+        return culture;
+    }
+
+    private void UpdateClock()
+    {
+        var now = DateTimeOffset.Now;
+
+        ClockTimeText.Text =
+            now.ToString(
+                "HH:mm:ss",
+                CultureInfo.InvariantCulture);
+
+        GregorianDateText.Text =
+            now.ToString(
+                "dddd, dd MMMM yyyy",
+                GregorianClockCulture);
+
+        HijriDateText.Text =
+            now.DateTime.ToString(
+                "dddd، d MMMM yyyy هـ",
+                HijriClockCulture);
     }
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
+        _trust.Initialize();
+
+        _trust.Record(
+            category: "system",
+            action: "application.start",
+            target: Environment.ProcessPath,
+            result: "STARTED",
+            details: new
+            {
+                database = _trust.DatabasePath,
+                integrity = _trust.IntegrityStatus
+            });
+
         var dataPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "KHZ",
@@ -67,6 +138,13 @@ public partial class MainWindow : Window
                 OfficeStatusText.Text = "OFFICE ONLINE";
                 OfficeStatusPill.Background =
                     new SolidColorBrush(Color.FromRgb(231, 246, 234));
+
+                _trust.Record(
+                    category: "runtime",
+                    action: "office.health",
+                    target: GatewayHealth.ToString(),
+                    result: "ONLINE");
+
                 return;
             }
         }
@@ -80,6 +158,12 @@ public partial class MainWindow : Window
         OfficeStatusText.Text = "OFFICE OFFLINE";
         OfficeStatusPill.Background =
             new SolidColorBrush(Color.FromRgb(249, 232, 232));
+
+        _trust.Record(
+            category: "runtime",
+            action: "office.health",
+            target: GatewayHealth.ToString(),
+            result: "OFFLINE");
     }
 
     private async void RefreshStatus_Click(object sender, RoutedEventArgs e)
@@ -103,6 +187,12 @@ public partial class MainWindow : Window
             _ => "Office"
         };
 
+        _trust.Record(
+            category: "navigation",
+            action: "office.open",
+            target: kind,
+            result: "REQUESTED");
+
         OfficeWeb.CoreWebView2.Navigate(
             $"http://localhost:8090/editor/{kind}");
     }
@@ -113,12 +203,18 @@ public partial class MainWindow : Window
         FilesSurface.Visibility = Visibility.Collapsed;
         HomeSurface.Visibility = Visibility.Visible;
         SectionTitle.Text = "Home";
+
+        _trust.Record(
+            category: "navigation",
+            action: "home.open",
+            target: "home",
+            result: "OPENED");
     }
 
     private void Home_Click(object sender, RoutedEventArgs e)
         => ShowHome();
 
-    private static bool IsAllowedOfficeNavigation(string uri)
+    private bool IsAllowedOfficeNavigation(string uri)
     {
         if (!Uri.TryCreate(uri, UriKind.Absolute, out var target))
             return false;
@@ -134,7 +230,11 @@ public partial class MainWindow : Window
             target.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
             target.Host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase);
 
-        return localHost && target.Port == 8090;
+        return
+            localHost &&
+            target.Port == 8090 &&
+            _policy.IsAllowed(
+                Capability.LocalOfficeNavigation);
     }
 
     private void OfficeNavigationStarting(
@@ -142,7 +242,20 @@ public partial class MainWindow : Window
         CoreWebView2NavigationStartingEventArgs e)
     {
         if (!IsAllowedOfficeNavigation(e.Uri))
+        {
             e.Cancel = true;
+
+            _trust.Record(
+                category: "security",
+                action: "webview.navigation",
+                target: e.Uri,
+                result: "DENIED",
+                details: new
+                {
+                    capability =
+                        Capability.ExternalWebNavigation.ToString()
+                });
+        }
     }
 
     private void OfficeNewWindowRequested(
@@ -161,6 +274,12 @@ public partial class MainWindow : Window
         OfficeWeb.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Visible;
         SectionTitle.Text = "Files";
+
+        _trust.Record(
+            category: "navigation",
+            action: "files.open",
+            target: _currentDirectory,
+            result: "OPENED");
 
         LoadDirectory(_currentDirectory);
     }
@@ -182,7 +301,7 @@ public partial class MainWindow : Window
                     x.Name,
                     x.FullName,
                     "Folder",
-                    x.LastWriteTime,
+                    x.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss"),
                     "",
                     true));
 
@@ -191,7 +310,7 @@ public partial class MainWindow : Window
                     x.Name,
                     x.FullName,
                     x.Extension.TrimStart('.').ToUpperInvariant(),
-                    x.LastWriteTime,
+                    x.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss"),
                     FormatSize(x.Length),
                     false));
 
@@ -261,6 +380,21 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (!_policy.IsAllowed(
+                Capability.LocalFileLaunch))
+        {
+            _trust.Record(
+                category: "security",
+                action: "file.launch",
+                target: entry.FullPath,
+                result: "DENIED");
+
+            FilesError.Text =
+                "Local file launch is not permitted by policy.";
+
+            return;
+        }
+
         try
         {
             Process.Start(new ProcessStartInfo
@@ -268,6 +402,12 @@ public partial class MainWindow : Window
                 FileName = entry.FullPath,
                 UseShellExecute = true
             });
+
+            _trust.Record(
+                category: "filesystem",
+                action: "file.launch",
+                target: entry.FullPath,
+                result: "OPENED");
 
             FilesError.Text = "";
         }
@@ -291,6 +431,20 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        _clockTimer.Stop();
+        try
+        {
+            _trust.Record(
+                category: "system",
+                action: "application.stop",
+                target: Environment.ProcessPath,
+                result: "STOPPED");
+        }
+        catch
+        {
+            // Shutdown must not be blocked by audit persistence failure.
+        }
+
         _http.Dispose();
         base.OnClosed(e);
     }
@@ -299,7 +453,7 @@ public partial class MainWindow : Window
         string Name,
         string FullPath,
         string Type,
-        DateTime Modified,
+        string Modified,
         string Size,
         bool IsDirectory);
 }
