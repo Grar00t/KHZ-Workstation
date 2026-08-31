@@ -59,6 +59,10 @@ public partial class MainWindow : Window
         ActivitySurface.Configure(
             _activityReader);
 
+        SecuritySurface.Configure(
+            _trust,
+            _policy);
+
         _clockTimer.Tick += (_, _) => UpdateClock();
 
         UpdateClock();
@@ -475,66 +479,8 @@ public partial class MainWindow : Window
         SecuritySurface.Visibility = Visibility.Visible;
         SectionTitle.Text = "Security";
 
-        RefreshSecuritySurface();
+        SecuritySurface.RefreshSecurity();
     }
-
-    private void RefreshSecurity_Click(
-        object sender,
-        RoutedEventArgs e)
-        => RefreshSecuritySurface();
-
-    private void RefreshSecuritySurface()
-    {
-        var integrity =
-            _trust.CheckIntegrity();
-
-        SecurityIntegrityText.Text =
-            string.Equals(
-                integrity,
-                "ok",
-                StringComparison.OrdinalIgnoreCase)
-                ? "Healthy · integrity_check=ok"
-                : $"Attention · {integrity}";
-
-        SecurityDatabasePathText.Text =
-            _trust.DatabasePath;
-
-        SecurityOfficeNavigationText.Text =
-            CapabilityStatus(
-                Capability.LocalOfficeNavigation,
-                allowedDetail: "Allowed · localhost:8090 only");
-
-        SecurityFileLaunchText.Text =
-            CapabilityStatus(
-                Capability.LocalFileLaunch);
-
-        SecurityExternalWebText.Text =
-            CapabilityStatus(
-                Capability.ExternalWebNavigation);
-
-        SecurityExternalNetworkText.Text =
-            CapabilityStatus(
-                Capability.ExternalNetwork);
-
-        SecurityProcessText.Text =
-            CapabilityStatus(
-                Capability.ArbitraryProcessExecution);
-
-        SecurityIntegrationWriteText.Text =
-            CapabilityStatus(
-                Capability.IntegrationWrite);
-
-        SecurityAiText.Text =
-            CapabilityStatus(
-                Capability.AiInference);
-    }
-
-    private string CapabilityStatus(
-        Capability capability,
-        string allowedDetail = "Allowed")
-        => _policy.IsAllowed(capability)
-            ? allowedDetail
-            : "Denied";
 
     private void Documents_Click(object sender, RoutedEventArgs e)
         => NavigateOffice("document");
