@@ -383,7 +383,9 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="Workspace"
+                        <TextBlock x:Name="WorkspaceIdentityText"
+                                   Text="Folder mode"
+                                   AutomationProperties.AutomationId="WorkspaceIdentityText"
                                    Foreground="#8A8A8A"
                                    FontSize="10"/>
 
@@ -699,6 +701,8 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
@@ -718,14 +722,34 @@
                                     VerticalAlignment="Center"
                                     Click="ChooseFolder_Click"/>
 
+                            <Button x:Name="OpenWorkspaceButton"
+                                    Grid.Column="2"
+                                    Content="Open workspace"
+                                    Height="32"
+                                    Margin="8,0,0,0"
+                                    Padding="12,0"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.AutomationId="OpenWorkspaceButton"
+                                    Click="OpenWorkspace_Click"/>
+
+                            <Button x:Name="CreateWorkspaceButton"
+                                    Grid.Column="3"
+                                    Content="Create workspace"
+                                    Height="32"
+                                    Margin="8,0,0,0"
+                                    Padding="12,0"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.AutomationId="CreateWorkspaceButton"
+                                    Click="CreateWorkspace_Click"/>
+
                             <TextBlock x:Name="CurrentFolderText"
-                                       Grid.Column="2"
+                                       Grid.Column="4"
                                        Margin="14,0"
                                        VerticalAlignment="Center"
                                        Foreground="#555555"
                                        TextTrimming="CharacterEllipsis"/>
 
-                            <Button Grid.Column="3"
+                            <Button Grid.Column="5"
                                     Content="↻"
                                     Width="34"
                                     Height="32"

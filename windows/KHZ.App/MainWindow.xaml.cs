@@ -6,6 +6,7 @@ using KHZ.App.Tasks;
 using KHZ.App.Repositories;
 using KHZ.App.Terminal;
 using KHZ.App.Settings;
+using KHZ.App.Workspaces;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
 using System;
@@ -45,6 +46,11 @@ public partial class MainWindow : Window
     private readonly ITaskStore _taskStore;
 
     private readonly IAppSettingsStore _appSettingsStore;
+
+    private readonly WorkspaceService _workspaceService =
+        new();
+
+    private WorkspaceContext? _activeWorkspace;
 
     private readonly IRepositoryInspector _repositoryInspector =
         new GitRepositoryInspector();
@@ -177,6 +183,8 @@ public partial class MainWindow : Window
         _currentDirectory =
             ResolveStartupWorkspaceFolder();
 
+        TryBindStartupWorkspace();
+
         _activity.Record(
             category: "system",
             action: "application.start",
@@ -224,6 +232,145 @@ public partial class MainWindow : Window
         }
 
         return fallback;
+    }
+
+    private void TryBindStartupWorkspace()
+    {
+        _activeWorkspace = null;
+
+        if (!_workspaceService.IsWorkspace(
+                _currentDirectory))
+        {
+            UpdateWorkspaceIndicator();
+            return;
+        }
+
+        try
+        {
+            var context =
+                _workspaceService.Open(
+                    _currentDirectory);
+
+            SetActiveWorkspace(
+                context,
+                action: "workspace.open",
+                result: "OPENED",
+                source: "startup");
+        }
+        catch (Exception ex)
+        {
+            UpdateWorkspaceIndicator();
+
+            _activity.Record(
+                category: "workspace",
+                action: "workspace.open",
+                target: "workspace",
+                result: "FAILED",
+                details: new
+                {
+                    source = "startup",
+                    errorType = ex.GetType().Name,
+                    pathCaptured = false
+                });
+        }
+    }
+
+    private void SetActiveWorkspace(
+        WorkspaceContext context,
+        string action,
+        string result,
+        string source)
+    {
+        _activeWorkspace = context;
+
+        UpdateWorkspaceIndicator();
+
+        _activity.Record(
+            category: "workspace",
+            action: action,
+            target: context.Info.WorkspaceId,
+            result: result,
+            details: new
+            {
+                source,
+                pathCaptured = false,
+                schemaVersion =
+                    context.Info.SchemaVersion
+            });
+    }
+
+    private void ClearActiveWorkspaceIfOutside(
+        string directory)
+    {
+        if (_activeWorkspace is null)
+            return;
+
+        var workspaceRoot =
+            Path.GetFullPath(
+                _activeWorkspace.Info.Root);
+
+        var candidate =
+            Path.GetFullPath(
+                directory);
+
+        var relative =
+            Path.GetRelativePath(
+                workspaceRoot,
+                candidate);
+
+        var insideWorkspace =
+            relative == "."
+            || (
+                !Path.IsPathRooted(relative)
+                && relative != ".."
+                && !relative.StartsWith(
+                    ".." + Path.DirectorySeparatorChar,
+                    StringComparison.Ordinal)
+                && !relative.StartsWith(
+                    ".." + Path.AltDirectorySeparatorChar,
+                    StringComparison.Ordinal)
+            );
+
+        if (insideWorkspace)
+            return;
+
+        var workspaceId =
+            _activeWorkspace.Info.WorkspaceId;
+
+        _activeWorkspace = null;
+
+        UpdateWorkspaceIndicator();
+
+        _activity.Record(
+            category: "workspace",
+            action: "workspace.deactivate",
+            target: workspaceId,
+            result: "DEACTIVATED",
+            details: new
+            {
+                reason = "directory_outside_workspace",
+                pathCaptured = false
+            });
+    }
+
+    private void UpdateWorkspaceIndicator()
+    {
+        if (_activeWorkspace is null)
+        {
+            WorkspaceIdentityText.Text =
+                "Folder mode";
+
+            WorkspaceIdentityText.ToolTip =
+                "No KHZ workspace is active.";
+
+            return;
+        }
+
+        WorkspaceIdentityText.Text =
+            $"Workspace: {_activeWorkspace.Info.Name}";
+
+        WorkspaceIdentityText.ToolTip =
+            $"KHZ workspace ID: {_activeWorkspace.Info.WorkspaceId}";
     }
 
     private async Task RefreshRuntimeStatusAsync()
@@ -413,6 +560,41 @@ public partial class MainWindow : Window
         LoadDirectory(_currentDirectory);
     }
 
+    private bool IsWorkspaceMetadataDirectory(
+        string directory)
+    {
+        var candidate =
+            new DirectoryInfo(
+                Path.GetFullPath(directory));
+
+        for (var current = candidate;
+             current is not null;
+             current = current.Parent)
+        {
+            if (!string.Equals(
+                    current.Name,
+                    WorkspaceService.MetadataDirectoryName,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var workspaceRoot =
+                current.Parent;
+
+            if (workspaceRoot is null)
+                return false;
+
+            if (_workspaceService.IsWorkspace(
+                    workspaceRoot.FullName))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void LoadDirectory(string path)
     {
         try
@@ -422,10 +604,45 @@ public partial class MainWindow : Window
             if (!dir.Exists)
                 return;
 
+            if (IsWorkspaceMetadataDirectory(
+                    dir.FullName))
+            {
+                FilesList.ItemsSource = null;
+
+                FilesError.Text =
+                    "KHZ workspace metadata is protected and cannot be browsed.";
+
+                _activity.Record(
+                    category: "security",
+                    action: "workspace.metadata.browse",
+                    target: "workspace_metadata",
+                    result: "DENIED",
+                    details: new
+                    {
+                        pathCaptured = false
+                    });
+
+                return;
+            }
+
             _currentDirectory = dir.FullName;
+
+            ClearActiveWorkspaceIfOutside(
+                _currentDirectory);
+
             CurrentFolderText.Text = _currentDirectory;
 
+            var hideWorkspaceMetadata =
+                _workspaceService.IsWorkspace(
+                    dir.FullName);
+
             var directories = dir.EnumerateDirectories()
+                .Where(x =>
+                    !hideWorkspaceMetadata
+                    || !string.Equals(
+                        x.Name,
+                        WorkspaceService.MetadataDirectoryName,
+                        StringComparison.OrdinalIgnoreCase))
                 .Select(x => new FileEntry(
                     x.Name,
                     x.FullName,
@@ -471,6 +688,115 @@ public partial class MainWindow : Window
         }
 
         return $"{size:0.##} {units[unit]}";
+    }
+
+    private void OpenWorkspace_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        var picker =
+            new OpenFolderDialog
+            {
+                Title = "Open KHZ Workspace",
+                InitialDirectory =
+                    _currentDirectory
+            };
+
+        if (picker.ShowDialog() != true)
+            return;
+
+        try
+        {
+            var context =
+                _workspaceService.Open(
+                    picker.FolderName);
+
+            SetActiveWorkspace(
+                context,
+                action: "workspace.open",
+                result: "OPENED",
+                source: "user");
+
+            LoadDirectory(
+                context.Info.Root);
+        }
+        catch (Exception ex)
+        {
+            FilesError.Text =
+                ex.Message;
+
+            _activity.Record(
+                category: "workspace",
+                action: "workspace.open",
+                target: "workspace",
+                result: "FAILED",
+                details: new
+                {
+                    source = "user",
+                    errorType = ex.GetType().Name,
+                    pathCaptured = false
+                });
+        }
+    }
+
+    private void CreateWorkspace_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        var picker =
+            new OpenFolderDialog
+            {
+                Title =
+                    "Create or activate KHZ Workspace",
+                InitialDirectory =
+                    _currentDirectory
+            };
+
+        if (picker.ShowDialog() != true)
+            return;
+
+        try
+        {
+            var existed =
+                _workspaceService.IsWorkspace(
+                    picker.FolderName);
+
+            var context =
+                _workspaceService.Create(
+                    picker.FolderName);
+
+            SetActiveWorkspace(
+                context,
+                action:
+                    existed
+                        ? "workspace.open"
+                        : "workspace.create",
+                result:
+                    existed
+                        ? "OPENED"
+                        : "CREATED",
+                source: "user");
+
+            LoadDirectory(
+                context.Info.Root);
+        }
+        catch (Exception ex)
+        {
+            FilesError.Text =
+                ex.Message;
+
+            _activity.Record(
+                category: "workspace",
+                action: "workspace.create",
+                target: "workspace",
+                result: "FAILED",
+                details: new
+                {
+                    source = "user",
+                    errorType = ex.GetType().Name,
+                    pathCaptured = false
+                });
+        }
     }
 
     private void ChooseFolder_Click(object sender, RoutedEventArgs e)
