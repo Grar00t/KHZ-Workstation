@@ -31,11 +31,16 @@ def sheet_range_to_document_table(workspace: Workspace, source_rel: str, sheet_n
     if source.suffix.lower() not in {".xlsx", ".xlsm"}:
         raise ValueError("Source must be XLSX/XLSM.")
     wb = load_workbook(source, data_only=False, read_only=True)
-    if sheet_name not in wb.sheetnames:
-        raise KeyError(f"Worksheet not found: {sheet_name}")
-    ws = wb[sheet_name]
-    min_col, min_row, max_col, max_row = range_boundaries(cell_range)
-    rows = [[ws.cell(r, c).value for c in range(min_col, max_col + 1)] for r in range(min_row, max_row + 1)]
+    try:
+        if sheet_name not in wb.sheetnames:
+            raise KeyError(f"Worksheet not found: {sheet_name}")
+        ws = wb[sheet_name]
+        min_col, min_row, max_col, max_row = range_boundaries(cell_range)
+        rows = [[ws.cell(r, c).value for c in range(min_col, max_col + 1)] for r in range(min_row, max_row + 1)]
+    finally:
+        # read_only workbooks keep the package stream open on Windows until
+        # explicitly closed, which otherwise prevents workspace cleanup.
+        wb.close()
     if not rows:
         raise ValueError("Range is empty.")
     doc = Document()
@@ -69,7 +74,11 @@ def document_table_to_sheet(workspace: Workspace, source_rel: str, table_index: 
     for row in table.rows:
         ws.append([cell.text for cell in row.cells])
     ws.freeze_panes = "A2" if len(table.rows) > 1 else None
-    buf = BytesIO(); wb.save(buf)
+    buf = BytesIO()
+    try:
+        wb.save(buf)
+    finally:
+        wb.close()
     target = FileService(workspace).atomic_write(dest_rel, buf.getvalue(), preserve_version=True)
     workspace.audit.append(
         who=getuser(), what="workflow.document_table_to_sheet", target=dest_rel,
