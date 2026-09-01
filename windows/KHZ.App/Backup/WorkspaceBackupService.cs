@@ -54,6 +54,11 @@ internal sealed class WorkspaceBackupManifest
         StringComparer.Ordinal);
 }
 
+internal sealed record WorkspaceRestoreResult(
+    string RestoredPath,
+    string? PreservedPath,
+    string WorkspaceId);
+
 internal sealed class WorkspaceBackupService
 {
     internal const string FormatId =
@@ -258,6 +263,428 @@ internal sealed class WorkspaceBackupService
             TryDeleteDirectory(
                 snapshotDirectory);
         }
+    }
+
+    public static WorkspaceRestoreResult Restore(
+        string backupPath,
+        string destinationPath,
+        bool preserveExisting = true,
+        string? expectedWorkspaceId = null)
+        => RestoreCore(
+            backupPath,
+            destinationPath,
+            preserveExisting,
+            expectedWorkspaceId,
+            static (stage, destination) =>
+                Directory.Move(
+                    stage,
+                    destination));
+
+    internal static WorkspaceRestoreResult RestoreCore(
+        string backupPath,
+        string destinationPath,
+        bool preserveExisting,
+        string? expectedWorkspaceId,
+        Action<string, string> publishDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(
+            publishDirectory);
+
+        var backup =
+            NormalizeExistingBackup(
+                backupPath);
+
+        var destination =
+            NormalizeRestoreDestination(
+                destinationPath);
+
+        var manifest =
+            Validate(
+                backup,
+                expectedWorkspaceId);
+
+        var parent =
+            Path.GetDirectoryName(
+                destination)
+            ?? throw new WorkspaceBackupException(
+                "Restore destination has no parent directory.");
+
+        Directory.CreateDirectory(
+            parent);
+
+        var stage =
+            Path.Combine(
+                parent,
+                Path.GetFileName(destination)
+                + ".restore-stage-"
+                + Guid.NewGuid()
+                    .ToString("N"));
+
+        string? preserved =
+            null;
+
+        var published =
+            false;
+
+        try
+        {
+            Directory.CreateDirectory(
+                stage);
+
+            ExtractToStage(
+                backup,
+                manifest,
+                stage);
+
+            ValidateRestoredStage(
+                stage,
+                manifest);
+
+            if (Directory.Exists(
+                    destination))
+            {
+                if (!preserveExisting)
+                {
+                    throw new WorkspaceBackupException(
+                        "Restore destination exists and preservation is required by policy.");
+                }
+
+                preserved =
+                    destination
+                    + ".pre-restore-"
+                    + DateTimeOffset.UtcNow
+                        .ToString(
+                            "yyyyMMddTHHmmssfffZ",
+                            CultureInfo.InvariantCulture)
+                    + "-"
+                    + Guid.NewGuid()
+                        .ToString("N");
+
+                Directory.Move(
+                    destination,
+                    preserved);
+            }
+            else if (File.Exists(
+                         destination))
+            {
+                throw new WorkspaceBackupException(
+                    "Restore destination points to an existing file.");
+            }
+
+            try
+            {
+                publishDirectory(
+                    stage,
+                    destination);
+
+                published =
+                    true;
+            }
+            catch (Exception publicationException)
+            {
+                if (preserved is not null
+                    && Directory.Exists(
+                        preserved)
+                    && !Directory.Exists(
+                        destination)
+                    && !File.Exists(
+                        destination))
+                {
+                    Directory.Move(
+                        preserved,
+                        destination);
+
+                    preserved =
+                        null;
+                }
+
+                throw new WorkspaceBackupException(
+                    "Restore publication failed; the preserved destination was restored when possible.",
+                    publicationException);
+            }
+
+            var opened =
+                new WorkspaceService()
+                    .Open(
+                        destination);
+
+            if (!string.Equals(
+                    opened.Info.WorkspaceId,
+                    manifest.WorkspaceId,
+                    StringComparison.Ordinal))
+            {
+                throw new WorkspaceBackupException(
+                    "Restored workspace identity does not match the backup manifest.");
+            }
+
+            return new WorkspaceRestoreResult(
+                RestoredPath:
+                    destination,
+
+                PreservedPath:
+                    preserved,
+
+                WorkspaceId:
+                    manifest.WorkspaceId);
+        }
+        catch (WorkspaceBackupException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new WorkspaceBackupException(
+                "Workspace restore failed.",
+                ex);
+        }
+        finally
+        {
+            if (!published)
+            {
+                TryDeleteDirectory(
+                    stage);
+            }
+        }
+    }
+
+    private static void ExtractToStage(
+        string backupPath,
+        WorkspaceBackupManifest manifest,
+        string stage)
+    {
+        using var stream =
+            new FileStream(
+                backupPath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read);
+
+        using var archive =
+            new ZipArchive(
+                stream,
+                ZipArchiveMode.Read,
+                leaveOpen: false);
+
+        var members =
+            archive
+                .Entries
+                .Where(
+                    entry =>
+                        !IsDirectoryEntry(
+                            entry))
+                .ToDictionary(
+                    entry =>
+                        entry.FullName,
+                    entry =>
+                        entry,
+                    StringComparer.OrdinalIgnoreCase);
+
+        foreach (var pair
+                 in manifest.Files)
+        {
+            ValidateArchivePath(
+                pair.Key);
+
+            if (!members.TryGetValue(
+                    pair.Key,
+                    out var entry))
+            {
+                throw new WorkspaceBackupException(
+                    $"Missing restore member: {pair.Key}");
+            }
+
+            var target =
+                GetSafeRestoreTarget(
+                    stage,
+                    pair.Key);
+
+            var targetParent =
+                Path.GetDirectoryName(
+                    target)
+                ?? throw new WorkspaceBackupException(
+                    $"Restore member has no parent: {pair.Key}");
+
+            Directory.CreateDirectory(
+                targetParent);
+
+            using var source =
+                entry.Open();
+
+            using var destination =
+                new FileStream(
+                    target,
+                    FileMode.CreateNew,
+                    FileAccess.Write,
+                    FileShare.None,
+                    bufferSize:
+                        CopyBufferSize,
+                    options:
+                        FileOptions.WriteThrough);
+
+            source.CopyTo(
+                destination,
+                CopyBufferSize);
+
+            destination.Flush(
+                flushToDisk: true);
+        }
+    }
+
+    private static void ValidateRestoredStage(
+        string stage,
+        WorkspaceBackupManifest manifest)
+    {
+        var actualFiles =
+            Directory
+                .EnumerateFiles(
+                    stage,
+                    "*",
+                    SearchOption.AllDirectories)
+                .Select(
+                    path =>
+                        Path.GetRelativePath(
+                            stage,
+                            path)
+                        .Replace(
+                            '\\',
+                            '/'))
+                .ToList();
+
+        if (actualFiles.Count !=
+            manifest.Files.Count)
+        {
+            throw new WorkspaceBackupException(
+                "Staged restore file count does not match the manifest.");
+        }
+
+        var expected =
+            new HashSet<string>(
+                manifest.Files.Keys,
+                StringComparer.OrdinalIgnoreCase);
+
+        if (actualFiles.Any(
+                path =>
+                    !expected.Contains(
+                        path)))
+        {
+            throw new WorkspaceBackupException(
+                "Staged restore contains an unexpected file.");
+        }
+
+        foreach (var pair
+                 in manifest.Files)
+        {
+            var path =
+                GetSafeRestoreTarget(
+                    stage,
+                    pair.Key);
+
+            if (!File.Exists(
+                    path))
+            {
+                throw new WorkspaceBackupException(
+                    $"Staged restore member is missing: {pair.Key}");
+            }
+
+            using var stream =
+                new FileStream(
+                    path,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.Read);
+
+            var actualHash =
+                ComputeSha256(
+                    stream);
+
+            if (!string.Equals(
+                    actualHash,
+                    pair.Value,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                throw new WorkspaceBackupException(
+                    $"Staged restore hash mismatch: {pair.Key}");
+            }
+        }
+
+        var opened =
+            new WorkspaceService()
+                .Open(
+                    stage);
+
+        if (!string.Equals(
+                opened.Info.WorkspaceId,
+                manifest.WorkspaceId,
+                StringComparison.Ordinal))
+        {
+            throw new WorkspaceBackupException(
+                "Staged workspace identity does not match the backup manifest.");
+        }
+    }
+
+    private static string GetSafeRestoreTarget(
+        string stage,
+        string relativePath)
+    {
+        ValidateArchivePath(
+            relativePath);
+
+        var root =
+            Path.GetFullPath(
+                stage);
+
+        var target =
+            Path.GetFullPath(
+                Path.Combine(
+                    root,
+                    relativePath.Replace(
+                        '/',
+                        Path.DirectorySeparatorChar)));
+
+        if (!IsInside(
+                root,
+                target)
+            || string.Equals(
+                root,
+                target,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new WorkspaceBackupException(
+                $"Restore path escaped the staging directory: {relativePath}");
+        }
+
+        return target;
+    }
+
+    private static string NormalizeRestoreDestination(
+        string path)
+    {
+        if (string.IsNullOrWhiteSpace(
+                path))
+        {
+            throw new ArgumentException(
+                "Restore destination is required.",
+                nameof(path));
+        }
+
+        var normalized =
+            Path.GetFullPath(
+                path.Trim());
+
+        var root =
+            Path.GetPathRoot(
+                normalized);
+
+        if (string.Equals(
+                root,
+                normalized,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new WorkspaceBackupException(
+                "A filesystem root cannot be used as a restore destination.");
+        }
+
+        return normalized;
     }
 
     public static WorkspaceBackupManifest Validate(
