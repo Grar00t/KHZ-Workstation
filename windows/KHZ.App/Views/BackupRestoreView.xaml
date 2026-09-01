@@ -1,0 +1,167 @@
+<UserControl x:Class="KHZ.App.Views.BackupRestoreView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#F5F5F5"
+             AutomationProperties.AutomationId="BackupRestoreSurface">
+
+    <Grid Margin="30">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="Backup &amp; Restore"
+                       FontSize="30"
+                       FontWeight="SemiBold"
+                       Foreground="#202020"/>
+
+            <TextBlock x:Name="WorkspaceStatusText"
+                       AutomationProperties.AutomationId="BackupRestoreWorkspaceStatus"
+                       Margin="0,4,0,0"
+                       FontSize="13"
+                       Foreground="#707070"
+                       Text="Folder mode · open a workspace to create backups"/>
+        </StackPanel>
+
+        <Border Grid.Row="1"
+                Margin="0,22,0,0"
+                Padding="20"
+                Width="820"
+                HorizontalAlignment="Left"
+                Background="White"
+                BorderBrush="#DDDDDD"
+                BorderThickness="1"
+                CornerRadius="6">
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel>
+                    <TextBlock Text="Workspace backup"
+                               FontSize="17"
+                               FontWeight="SemiBold"
+                               Foreground="#202020"/>
+
+                    <TextBlock Text="Creates a validated ZIP backup with workspace identity and SHA-256 hashes."
+                               Margin="0,5,20,0"
+                               TextWrapping="Wrap"
+                               Foreground="#686868"
+                               FontSize="12"/>
+                </StackPanel>
+
+                <Button x:Name="CreateBackupButton"
+                        Grid.Column="1"
+                        AutomationProperties.AutomationId="CreateWorkspaceBackupButton"
+                        Content="Create backup"
+                        Height="36"
+                        MinWidth="130"
+                        Padding="16,0"
+                        IsEnabled="False"
+                        Click="CreateBackup_Click"/>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="2"
+                Margin="0,14,0,0"
+                Padding="20"
+                Width="820"
+                HorizontalAlignment="Left"
+                Background="White"
+                BorderBrush="#DDDDDD"
+                BorderThickness="1"
+                CornerRadius="6">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel>
+                        <TextBlock Text="Restore workspace"
+                                   FontSize="17"
+                                   FontWeight="SemiBold"
+                                   Foreground="#202020"/>
+
+                        <TextBlock Text="Validates the archive before extraction. Existing destinations are preserved before publication."
+                                   Margin="0,5,20,0"
+                                   TextWrapping="Wrap"
+                                   Foreground="#686868"
+                                   FontSize="12"/>
+                    </StackPanel>
+
+                    <Button x:Name="ValidateBackupButton"
+                            Grid.Column="1"
+                            AutomationProperties.AutomationId="ValidateWorkspaceBackupButton"
+                            Content="Validate backup"
+                            Height="36"
+                            MinWidth="130"
+                            Padding="16,0"
+                            Margin="0,0,8,0"
+                            Click="ValidateBackup_Click"/>
+
+                    <Button x:Name="RestoreBackupButton"
+                            Grid.Column="2"
+                            AutomationProperties.AutomationId="RestoreWorkspaceBackupButton"
+                            Content="Restore backup"
+                            Height="36"
+                            MinWidth="130"
+                            Padding="16,0"
+                            Click="RestoreBackup_Click"/>
+                </Grid>
+
+                <TextBlock Grid.Row="1"
+                           Margin="0,14,0,0"
+                           Foreground="#777777"
+                           FontSize="11"
+                           TextWrapping="Wrap"
+                           Text="Restore creates a new workspace folder and does not automatically replace or activate the workspace currently open in KHZ."/>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="3"
+                Margin="0,18,0,0"
+                Padding="16"
+                Width="820"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Background="#EEEEEE"
+                CornerRadius="5">
+
+            <StackPanel>
+                <TextBlock Text="Safety boundary"
+                           FontSize="11"
+                           FontWeight="SemiBold"
+                           Foreground="#555555"/>
+
+                <TextBlock Margin="0,5,0,0"
+                           FontSize="11"
+                           Foreground="#686868"
+                           TextWrapping="Wrap"
+                           Text="A restore destination may not overlap the active workspace. Archive paths and hashes are validated before publication. No network or AI capability is used."/>
+            </StackPanel>
+        </Border>
+
+        <TextBlock x:Name="ResultText"
+                   Grid.Row="4"
+                   AutomationProperties.AutomationId="BackupRestoreResult"
+                   Margin="0,12,0,0"
+                   FontSize="11"
+                   Foreground="#555555"
+                   TextWrapping="Wrap"/>
+    </Grid>
+</UserControl>

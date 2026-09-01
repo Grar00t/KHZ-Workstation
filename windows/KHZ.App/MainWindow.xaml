@@ -160,6 +160,20 @@
                         </StackPanel>
                     </Button>
 
+                    <Button x:Name="BackupRestoreButton"
+                            AutomationProperties.AutomationId="BackupRestoreButton"
+                            Style="{StaticResource NavButton}"
+                            Click="BackupRestore_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="↶"
+                                       FontSize="16"
+                                       Width="28"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="Backup &amp; Restore"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
                     <Button x:Name="RepositoriesButton"
                             Style="{StaticResource NavButton}"
                             Click="Repositories_Click">
@@ -693,6 +707,9 @@
 
                 <views:StructuredDataView x:Name="StructuredDataSurface"
                                           Visibility="Collapsed"/>
+
+                <views:BackupRestoreView x:Name="BackupRestoreSurface"
+                                         Visibility="Collapsed"/>
 
                 <views:RepositoriesView x:Name="RepositoriesSurface"
                                         Visibility="Collapsed"/>

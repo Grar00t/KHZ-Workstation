@@ -123,6 +123,9 @@ public partial class MainWindow : Window
         StructuredDataSurface.Configure(
             _activity);
 
+        BackupRestoreSurface.Configure(
+            _activity);
+
         RepositoriesSurface.Configure(
             _repositoryInspector,
             _activity,
@@ -289,6 +292,9 @@ public partial class MainWindow : Window
         StructuredDataSurface.SetWorkspace(
             context);
 
+        BackupRestoreSurface.SetWorkspace(
+            context);
+
         UpdateWorkspaceIndicator();
 
         _activity.Record(
@@ -346,6 +352,9 @@ public partial class MainWindow : Window
         _activeWorkspace = null;
 
         StructuredDataSurface.SetWorkspace(
+            null);
+
+        BackupRestoreSurface.SetWorkspace(
             null);
 
         UpdateWorkspaceIndicator();
@@ -438,6 +447,7 @@ public partial class MainWindow : Window
         TerminalSurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
         StructuredDataSurface.Visibility = Visibility.Collapsed;
+        BackupRestoreSurface.Visibility = Visibility.Collapsed;
 
         if (OfficeWeb.CoreWebView2 is null)
             return;
@@ -478,6 +488,7 @@ public partial class MainWindow : Window
 
         OfficeWeb.Visibility = Visibility.Collapsed;
         StructuredDataSurface.Visibility = Visibility.Collapsed;
+        BackupRestoreSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         HomeSurface.Visibility = Visibility.Visible;
         SectionTitle.Text = "Home";
@@ -560,6 +571,7 @@ public partial class MainWindow : Window
         HomeSurface.Visibility = Visibility.Collapsed;
         OfficeWeb.Visibility = Visibility.Collapsed;
         StructuredDataSurface.Visibility = Visibility.Collapsed;
+        BackupRestoreSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Visible;
         SectionTitle.Text = "Files";
 
@@ -896,6 +908,7 @@ public partial class MainWindow : Window
 
         OfficeWeb.Visibility = Visibility.Collapsed;
         StructuredDataSurface.Visibility = Visibility.Collapsed;
+        BackupRestoreSurface.Visibility = Visibility.Collapsed;
         HomeSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
@@ -924,6 +937,7 @@ public partial class MainWindow : Window
 
         OfficeWeb.Visibility = Visibility.Collapsed;
         StructuredDataSurface.Visibility = Visibility.Collapsed;
+        BackupRestoreSurface.Visibility = Visibility.Collapsed;
         HomeSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
@@ -952,6 +966,7 @@ public partial class MainWindow : Window
 
         OfficeWeb.Visibility = Visibility.Collapsed;
         StructuredDataSurface.Visibility = Visibility.Collapsed;
+        BackupRestoreSurface.Visibility = Visibility.Collapsed;
         HomeSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
@@ -1002,6 +1017,39 @@ public partial class MainWindow : Window
             "Structured Data";
     }
 
+    private void BackupRestore_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        _activity.Record(
+            category: "navigation",
+            action: "backup-restore.open",
+            target: "backup-restore",
+            result: "OPENED");
+
+        OfficeWeb.Visibility = Visibility.Collapsed;
+        HomeSurface.Visibility = Visibility.Collapsed;
+        FilesSurface.Visibility = Visibility.Collapsed;
+        ActivitySurface.Visibility = Visibility.Collapsed;
+        SecuritySurface.Visibility = Visibility.Collapsed;
+        IntegrationsSurface.Visibility = Visibility.Collapsed;
+        SettingsSurface.Visibility = Visibility.Collapsed;
+        SearchSurface.Visibility = Visibility.Collapsed;
+        TasksSurface.Visibility = Visibility.Collapsed;
+        StructuredDataSurface.Visibility = Visibility.Collapsed;
+        RepositoriesSurface.Visibility = Visibility.Collapsed;
+        TerminalSurface.Visibility = Visibility.Collapsed;
+
+        BackupRestoreSurface.SetWorkspace(
+            _activeWorkspace);
+
+        BackupRestoreSurface.Visibility =
+            Visibility.Visible;
+
+        SectionTitle.Text =
+            "Backup & Restore";
+    }
+
     private void Repositories_Click(
         object sender,
         RoutedEventArgs e)
@@ -1014,6 +1062,7 @@ public partial class MainWindow : Window
 
         OfficeWeb.Visibility = Visibility.Collapsed;
         StructuredDataSurface.Visibility = Visibility.Collapsed;
+        BackupRestoreSurface.Visibility = Visibility.Collapsed;
         HomeSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
@@ -1042,6 +1091,7 @@ public partial class MainWindow : Window
 
         OfficeWeb.Visibility = Visibility.Collapsed;
         StructuredDataSurface.Visibility = Visibility.Collapsed;
+        BackupRestoreSurface.Visibility = Visibility.Collapsed;
         HomeSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
@@ -1068,6 +1118,7 @@ public partial class MainWindow : Window
 
         OfficeWeb.Visibility = Visibility.Collapsed;
         StructuredDataSurface.Visibility = Visibility.Collapsed;
+        BackupRestoreSurface.Visibility = Visibility.Collapsed;
         HomeSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
@@ -1099,6 +1150,7 @@ public partial class MainWindow : Window
 
         OfficeWeb.Visibility = Visibility.Collapsed;
         StructuredDataSurface.Visibility = Visibility.Collapsed;
+        BackupRestoreSurface.Visibility = Visibility.Collapsed;
         HomeSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
@@ -1126,6 +1178,7 @@ public partial class MainWindow : Window
 
         OfficeWeb.Visibility = Visibility.Collapsed;
         StructuredDataSurface.Visibility = Visibility.Collapsed;
+        BackupRestoreSurface.Visibility = Visibility.Collapsed;
         HomeSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
