@@ -1,5 +1,6 @@
-using KHZ.App.Trust;
+using KHZ.App.Chat;
 using KHZ.App.Terminal;
+using KHZ.App.Trust;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,6 +16,11 @@ public partial class SecurityView : UserControl
     public SecurityView()
     {
         InitializeComponent();
+        LocalAiSessionGate.Shared.Changed += (_, _) =>
+        {
+            if (IsLoaded)
+                RefreshSecurity();
+        };
     }
 
     internal void Configure(
@@ -117,17 +123,22 @@ public partial class SecurityView : UserControl
                 _policy.IsAllowed(
                     Capability.ArbitraryProcessExecution)
                     ? "Allowed"
-                    : terminalSessionEffective
-                        ? "Denied to automation · user terminal is separate execution"
-                        : "Denied";
+                    : LocalAiSessionGate.Shared.IsEnabled
+                        ? "Arbitrary denied · local AI child runtime session-enabled"
+                        : terminalSessionEffective
+                            ? "Denied to automation · user terminal is separate execution"
+                            : "Denied";
 
             SecurityIntegrationWriteText.Text =
                 CapabilityStatus(
                     Capability.IntegrationWrite);
 
             SecurityAiText.Text =
-                CapabilityStatus(
-                    Capability.AiInference);
+                _policy.IsAllowed(Capability.AiInference)
+                    ? "Allowed by policy"
+                    : LocalAiSessionGate.Shared.IsEnabled
+                        ? "Session-enabled · local model only · not persisted"
+                        : "Denied by default · session disabled";
 
             SecurityErrorText.Text = "";
             SecurityErrorText.Visibility =

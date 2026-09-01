@@ -14,6 +14,8 @@ public partial class MainWindow
     {
         base.OnContentRendered(e);
 
+        InitializeChatSurface();
+
         if (_workspaceComposerInitialized)
             return;
 
@@ -97,6 +99,10 @@ public partial class MainWindow
 
         switch (e.Destination)
         {
+            case "chat":
+                Chat_Click(this, routed);
+                break;
+
             case "files":
                 Files_Click(this, routed);
                 break;
