@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -32,10 +31,7 @@ internal sealed class LlamaChatClient : IDisposable
             settings,
             includeReasoningFormat: settings.HideReasoning);
 
-        var result = await SendAsync(
-            endpoint,
-            payload,
-            cancellationToken);
+        var result = await SendAsync(endpoint, payload, cancellationToken);
 
         if (!result.Success
             && settings.HideReasoning
@@ -47,10 +43,7 @@ internal sealed class LlamaChatClient : IDisposable
                 settings,
                 includeReasoningFormat: false);
 
-            result = await SendAsync(
-                endpoint,
-                payload,
-                cancellationToken);
+            result = await SendAsync(endpoint, payload, cancellationToken);
         }
 
         if (!result.Success)
@@ -66,8 +59,7 @@ internal sealed class LlamaChatClient : IDisposable
             || choices.ValueKind != JsonValueKind.Array
             || choices.GetArrayLength() == 0)
         {
-            throw new InvalidDataException(
-                "Local model response did not contain choices.");
+            throw new InvalidDataException("Local model response did not contain choices.");
         }
 
         var choice = choices[0];
@@ -77,17 +69,11 @@ internal sealed class LlamaChatClient : IDisposable
                 : string.Empty;
 
         if (!choice.TryGetProperty("message", out var message))
-        {
-            throw new InvalidDataException(
-                "Local model response did not contain a message.");
-        }
-
-        var content = ReadContent(message);
-        var toolCall = ReadFirstToolCall(message);
+            throw new InvalidDataException("Local model response did not contain a message.");
 
         return new ChatCompletionResult(
-            Content: SanitizeVisibleContent(content),
-            ToolCall: toolCall,
+            Content: SanitizeVisibleContent(ReadContent(message)),
+            ToolCall: ReadFirstToolCall(message),
             FinishReason: finishReason);
     }
 
@@ -127,9 +113,7 @@ internal sealed class LlamaChatClient : IDisposable
                 messages.Add(new JsonObject
                 {
                     ["role"] = "assistant",
-                    ["content"] = string.IsNullOrWhiteSpace(item.Content)
-                        ? null
-                        : item.Content,
+                    ["content"] = string.IsNullOrWhiteSpace(item.Content) ? null : item.Content,
                     ["tool_calls"] = new JsonArray
                     {
                         new JsonObject
@@ -154,18 +138,15 @@ internal sealed class LlamaChatClient : IDisposable
             });
         }
 
-        var maxTokens = Math.Clamp(
-            settings.ContextSize / 4,
-            512,
-            4096);
+        var maxTokens = Math.Clamp(settings.ContextSize / 4, 512, 4096);
 
         var payload = new JsonObject
         {
             ["model"] = settings.ModelLabel,
             ["messages"] = messages,
             ["stream"] = false,
-            ["temperature"] = 0.2,
-            ["top_p"] = 0.9,
+            ["temperature"] = 0.6,
+            ["top_p"] = 0.95,
             ["max_tokens"] = maxTokens
         };
 
@@ -203,14 +184,7 @@ internal sealed class LlamaChatClient : IDisposable
         if (history.Count == 0)
             return history;
 
-        // Character budgeting is intentionally conservative because the WPF
-        // host does not own the model tokenizer. Reserve roughly one quarter
-        // of the configured context for the answer and tool schemas.
-        var maxCharacters = Math.Clamp(
-            contextSize * 2,
-            8_000,
-            180_000);
-
+        var maxCharacters = Math.Clamp(contextSize * 2, 8_000, 180_000);
         var selected = new List<ChatMessage>();
         var used = 0;
 
@@ -232,13 +206,8 @@ internal sealed class LlamaChatClient : IDisposable
 
         selected.Reverse();
 
-        // A tool result without its preceding assistant tool call is invalid
-        // OpenAI-style history. Drop leading orphaned tool results after trim.
-        while (selected.Count > 0
-               && selected[0].Role == "tool")
-        {
+        while (selected.Count > 0 && selected[0].Role == "tool")
             selected.RemoveAt(0);
-        }
 
         return selected;
     }
@@ -261,10 +230,7 @@ internal sealed class LlamaChatClient : IDisposable
             cancellationToken);
 
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
-        return new SendResult(
-            response.IsSuccessStatusCode,
-            (int)response.StatusCode,
-            body);
+        return new SendResult(response.IsSuccessStatusCode, (int)response.StatusCode, body);
     }
 
     private static bool LooksLikeUnsupportedReasoningFormat(string body)
@@ -280,10 +246,9 @@ internal sealed class LlamaChatClient : IDisposable
             return string.Empty;
         }
 
-        if (content.ValueKind == JsonValueKind.String)
-            return content.GetString() ?? string.Empty;
-
-        return content.ToString();
+        return content.ValueKind == JsonValueKind.String
+            ? content.GetString() ?? string.Empty
+            : content.ToString();
     }
 
     private static ChatToolCall? ReadFirstToolCall(JsonElement message)
@@ -313,10 +278,9 @@ internal sealed class LlamaChatClient : IDisposable
                 : argsElement.GetRawText()
             : "{}";
 
-        if (string.IsNullOrWhiteSpace(name))
-            return null;
-
-        return new ChatToolCall(id, name, arguments);
+        return string.IsNullOrWhiteSpace(name)
+            ? null
+            : new ChatToolCall(id, name, arguments);
     }
 
     internal static string SanitizeVisibleContent(string content)
@@ -330,18 +294,12 @@ internal sealed class LlamaChatClient : IDisposable
         return content.Trim();
     }
 
-    private static string StripDelimited(
-        string value,
-        string start,
-        string end)
+    private static string StripDelimited(string value, string start, string end)
     {
         var cursor = 0;
         while (true)
         {
-            var first = value.IndexOf(
-                start,
-                cursor,
-                StringComparison.OrdinalIgnoreCase);
+            var first = value.IndexOf(start, cursor, StringComparison.OrdinalIgnoreCase);
             if (first < 0)
                 break;
 
@@ -356,9 +314,7 @@ internal sealed class LlamaChatClient : IDisposable
                 break;
             }
 
-            value = value.Remove(
-                first,
-                last + end.Length - first);
+            value = value.Remove(first, last + end.Length - first);
             cursor = first;
         }
 
@@ -371,8 +327,5 @@ internal sealed class LlamaChatClient : IDisposable
     public void Dispose()
         => _http.Dispose();
 
-    private sealed record SendResult(
-        bool Success,
-        int StatusCode,
-        string Body);
+    private sealed record SendResult(bool Success, int StatusCode, string Body);
 }
