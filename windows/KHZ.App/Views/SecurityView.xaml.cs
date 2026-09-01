@@ -55,6 +55,13 @@ public partial class SecurityView : UserControl
             var integrity =
                 _trust.CheckIntegrity();
 
+            var terminalBlockedByElevation =
+                WindowsExecutionContext.IsElevated();
+
+            var terminalSessionEffective =
+                _terminalSessionGate.IsEnabled
+                && !terminalBlockedByElevation;
+
             SecurityIntegrityText.Text =
                 string.Equals(
                     integrity,
@@ -81,12 +88,14 @@ public partial class SecurityView : UserControl
                     "Allowed · read-only Git metadata");
 
             SecurityUserTerminalText.Text =
-                _policy.IsAllowed(
-                    Capability.UserTerminalExecution)
-                    ? "Allowed by policy"
-                    : _terminalSessionGate.IsEnabled
-                        ? "Session-enabled by user · not persisted"
-                        : "Denied by default · session disabled";
+                terminalBlockedByElevation
+                    ? "Blocked · application is running elevated"
+                    : _policy.IsAllowed(
+                        Capability.UserTerminalExecution)
+                        ? "Allowed by policy"
+                        : terminalSessionEffective
+                            ? "Session-enabled by user · not persisted"
+                            : "Denied by default · session disabled";
 
             SecurityExternalWebText.Text =
                 CapabilityStatus(
@@ -100,7 +109,7 @@ public partial class SecurityView : UserControl
                 _policy.IsAllowed(
                     Capability.InternetEgress)
                     ? "Allowed"
-                    : _terminalSessionGate.IsEnabled
+                    : terminalSessionEffective
                         ? "Denied to KHZ-managed clients · user terminal may use OS network"
                         : "Denied";
 
@@ -108,7 +117,7 @@ public partial class SecurityView : UserControl
                 _policy.IsAllowed(
                     Capability.ArbitraryProcessExecution)
                     ? "Allowed"
-                    : _terminalSessionGate.IsEnabled
+                    : terminalSessionEffective
                         ? "Denied to automation · user terminal is separate execution"
                         : "Denied";
 

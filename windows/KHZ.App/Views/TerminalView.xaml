@@ -24,7 +24,7 @@
 
                 <TextBlock TextWrapping="Wrap"
                            Foreground="#5F4500"
-                           Text="PowerShell commands run under the signed-in Windows account. This is not a sandbox. Commands may access files, start processes, or use network access permitted by Windows. Session enablement is not persisted. Command text is not written to Activity."/>
+                           Text="PowerShell commands run under the signed-in Windows account. This is not a sandbox. Commands may access files, start processes, or use network access permitted by Windows. Terminal execution is blocked when KHZ Workstation is running elevated as administrator. Session enablement is not persisted. Command text is not written to Activity."/>
             </Border>
 
             <Border Background="White"

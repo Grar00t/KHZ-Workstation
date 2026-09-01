@@ -16,11 +16,19 @@ class CrossOfficeWorkflowTests(unittest.TestCase):
     def test_deterministic_cross_office_workflows(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td) / "ws"; ws = Workspace.create(root, "Flow")
-            wb = Workbook(); sh = wb.active; sh.title = "Summary"; sh.append(["Name", "Amount"]); sh.append(["A", 10]); sh.append(["B", 20]); wb.save(root / "source.xlsx")
+            wb = Workbook(); sh = wb.active; sh.title = "Summary"; sh.append(["Name", "Amount"]); sh.append(["A", 10]); sh.append(["B", 20])
+            try:
+                wb.save(root / "source.xlsx")
+            finally:
+                wb.close()
             out_doc = sheet_range_to_document_table(ws, "source.xlsx", "Summary", "A1:B3", "range.docx")
             doc = Document(out_doc); self.assertEqual(doc.tables[0].cell(1, 1).text, "10")
             out_sheet = document_table_to_sheet(ws, "range.docx", 0, "table.xlsx")
-            check = load_workbook(out_sheet, data_only=False); self.assertEqual(check["ImportedTable"]["B3"].value, "20")
+            check = load_workbook(out_sheet, data_only=False)
+            try:
+                self.assertEqual(check["ImportedTable"]["B3"].value, "20")
+            finally:
+                check.close()
             d = Document(); d.add_heading("Quarterly Review", 1); d.add_heading("Operations", 2); d.add_heading("Finding A", 3); d.add_heading("Finance", 2); d.save(root / "outline.docx")
             out_ppt = document_outline_to_slides(ws, "outline.docx", "outline.pptx")
             prs = Presentation(out_ppt); self.assertGreaterEqual(len(prs.slides), 3)

@@ -100,6 +100,26 @@ public partial class TerminalView : UserControl
             return;
         }
 
+        if (WindowsExecutionContext.IsElevated())
+        {
+            TerminalSessionStatusText.Text =
+                "Blocked · KHZ Workstation is running as administrator";
+
+            TerminalSessionButton.Content =
+                "Unavailable while elevated";
+
+            TerminalSessionButton.IsEnabled =
+                false;
+
+            TerminalRunButton.IsEnabled =
+                false;
+
+            TerminalCancelButton.IsEnabled =
+                _runCancellation is not null;
+
+            return;
+        }
+
         var policyAllowed =
             _policy.IsAllowed(
                 Capability.UserTerminalExecution);
@@ -149,6 +169,15 @@ public partial class TerminalView : UserControl
             TerminalErrorText.Text =
                 "Terminal dependencies are not configured.";
 
+            return;
+        }
+
+        if (WindowsExecutionContext.IsElevated())
+        {
+            TerminalErrorText.Text =
+                "Terminal execution is unavailable while KHZ Workstation is running as administrator.";
+
+            RefreshState();
             return;
         }
 
@@ -217,7 +246,9 @@ public partial class TerminalView : UserControl
         if (!IsExecutionAuthorized())
         {
             TerminalErrorText.Text =
-                "Enable terminal execution for this session first.";
+                WindowsExecutionContext.IsElevated()
+                    ? "Terminal execution is unavailable while KHZ Workstation is running as administrator."
+                    : "Enable terminal execution for this session first.";
 
             return;
         }
@@ -370,11 +401,14 @@ public partial class TerminalView : UserControl
     }
 
     private bool IsExecutionAuthorized()
-        => _policy?.IsAllowed(
-               Capability.UserTerminalExecution)
-           == true
-           || _sessionGate?.IsEnabled
-           == true;
+        => !WindowsExecutionContext.IsElevated()
+           && (
+               _policy?.IsAllowed(
+                   Capability.UserTerminalExecution)
+               == true
+               || _sessionGate?.IsEnabled
+               == true
+           );
 
     private static string FormatResult(
         TerminalExecutionResult result)

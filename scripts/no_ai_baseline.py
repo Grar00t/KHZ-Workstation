@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
-import sys
 import tempfile
 from pathlib import Path
 
@@ -45,7 +44,10 @@ def main() -> int:
         else:
             checks["git_read_only"] = None
         term = TerminalService(ws.root, enabled=True)
-        result = term.run(f'"{sys.executable}" -c "print(12345)"', authorized=True, timeout=20)
+        # `echo` is intentionally shell-portable. The previous Python executable
+        # invocation was valid in cmd/sh but PowerShell interprets a quoted
+        # executable path as a string unless invoked with `&`.
+        result = term.run("echo 12345", authorized=True, timeout=20)
         checks["terminal"] = result.exit_code == 0 and "12345" in result.stdout
         backup = BackupService(ws).create(base / "baseline.khzbackup.zip")
         checks["backup"] = backup.exists()

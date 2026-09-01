@@ -32,6 +32,13 @@ internal sealed class PowerShellTerminalRunner : ITerminalRunner
         var startedAt =
             DateTimeOffset.Now;
 
+        if (WindowsExecutionContext.IsElevated())
+        {
+            return Failed(
+                startedAt,
+                "Terminal execution is blocked while KHZ Workstation is running elevated. Restart KHZ Workstation without administrator elevation to use the user terminal.");
+        }
+
         var startInfo =
             new ProcessStartInfo
             {

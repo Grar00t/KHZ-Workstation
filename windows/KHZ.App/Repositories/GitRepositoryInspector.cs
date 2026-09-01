@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,6 +13,12 @@ internal sealed class GitRepositoryInspector : IRepositoryInspector
 {
     private static readonly TimeSpan CommandTimeout =
         TimeSpan.FromSeconds(5);
+
+    private const int MaxCapturedCharacters =
+        1_048_576;
+
+    private const string TruncationMarker =
+        "[KHZ Git output truncated after 1048576 characters]";
 
     private string? _gitExecutable;
 
@@ -217,10 +224,12 @@ internal sealed class GitRepositoryInspector : IRepositoryInspector
         }
 
         var stdoutTask =
-            process.StandardOutput.ReadToEndAsync();
+            ReadBoundedAsync(
+                process.StandardOutput);
 
         var stderrTask =
-            process.StandardError.ReadToEndAsync();
+            ReadBoundedAsync(
+                process.StandardError);
 
         using var timeout =
             CancellationTokenSource.CreateLinkedTokenSource(
@@ -235,19 +244,13 @@ internal sealed class GitRepositoryInspector : IRepositoryInspector
                 timeout.Token);
         }
         catch (OperationCanceledException)
-            when (!cancellationToken.IsCancellationRequested)
         {
-            try
+            TerminateProcessTree(
+                process);
+
+            if (cancellationToken.IsCancellationRequested)
             {
-                if (!process.HasExited)
-                {
-                    process.Kill(
-                        entireProcessTree: true);
-                }
-            }
-            catch
-            {
-                // Best-effort termination after timeout.
+                throw;
             }
 
             throw new TimeoutException(
@@ -264,6 +267,73 @@ internal sealed class GitRepositoryInspector : IRepositoryInspector
             process.ExitCode,
             standardOutput,
             standardError);
+    }
+
+    private static void TerminateProcessTree(
+        Process process)
+    {
+        try
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(
+                    entireProcessTree: true);
+            }
+        }
+        catch
+        {
+            // Best-effort cleanup. The caller still receives
+            // cancellation or timeout as the primary result.
+        }
+    }
+
+    private static async Task<string> ReadBoundedAsync(
+        StreamReader reader)
+    {
+        var builder =
+            new StringBuilder();
+
+        var buffer =
+            new char[8192];
+
+        var truncated =
+            false;
+
+        while (true)
+        {
+            var read =
+                await reader.ReadAsync(
+                    buffer.AsMemory());
+
+            if (read == 0)
+                break;
+
+            var remaining =
+                MaxCapturedCharacters
+                - builder.Length;
+
+            if (remaining > 0)
+            {
+                builder.Append(
+                    buffer,
+                    0,
+                    Math.Min(
+                        remaining,
+                        read));
+            }
+
+            if (read > remaining)
+                truncated = true;
+        }
+
+        if (truncated)
+        {
+            builder.AppendLine();
+            builder.Append(
+                TruncationMarker);
+        }
+
+        return builder.ToString();
     }
 
     private static IReadOnlyList<RepositoryChange> ParseChanges(
