@@ -1,0 +1,380 @@
+<UserControl x:Class="KHZ.App.Views.WorkspaceComposerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#F5F5F5">
+
+    <UserControl.Resources>
+        <Style x:Key="ComposerCard" TargetType="Button">
+            <Setter Property="Width" Value="232"/>
+            <Setter Property="Height" Value="94"/>
+            <Setter Property="Margin" Value="0,0,12,12"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#DDDDDD"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <Style x:Key="ComposerUtilityCard"
+               TargetType="Button"
+               BasedOn="{StaticResource ComposerCard}">
+            <Setter Property="Height" Value="78"/>
+        </Style>
+    </UserControl.Resources>
+
+    <StackPanel MaxWidth="1040"
+                Margin="34"
+                HorizontalAlignment="Left">
+
+        <TextBlock Text="Workspace"
+                   FontSize="30"
+                   FontWeight="SemiBold"
+                   Foreground="#202020"/>
+
+        <TextBlock Text="One local surface for real files, tasks, structured data, repositories and Office documents."
+                   Margin="0,4,0,0"
+                   FontSize="14"
+                   Foreground="#707070"
+                   TextWrapping="Wrap"/>
+
+        <Border Margin="0,18,0,24"
+                Width="964"
+                HorizontalAlignment="Left"
+                Padding="14,12"
+                Background="#ECECEC"
+                CornerRadius="6">
+            <TextBlock FontSize="11"
+                       Foreground="#5D5D5D"
+                       TextWrapping="Wrap">
+                <Run Text="Workspace Composer v1 · "/>
+                <Run Text="No duplicated state. Each card opens the canonical local KHZ surface. Workspace identity remains bound to the active folder shown in the header."/>
+            </TextBlock>
+        </Border>
+
+        <TextBlock Text="WORKSPACE"
+                   FontSize="10"
+                   FontWeight="SemiBold"
+                   Foreground="#777777"
+                   Margin="0,0,0,10"/>
+
+        <WrapPanel Width="980" HorizontalAlignment="Left">
+            <Button Style="{StaticResource ComposerCard}"
+                    Tag="files"
+                    AutomationProperties.AutomationId="ComposerFilesButton"
+                    Click="Navigate_Click">
+                <Grid Margin="16,12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Files"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="#202020"/>
+                    <TextBlock Grid.Row="1"
+                               Text="Browse the real workspace folder"
+                               Margin="0,5,0,0"
+                               FontSize="11"
+                               Foreground="#707070"/>
+                </Grid>
+            </Button>
+
+            <Button Style="{StaticResource ComposerCard}"
+                    Tag="tasks"
+                    AutomationProperties.AutomationId="ComposerTasksButton"
+                    Click="Navigate_Click">
+                <Grid Margin="16,12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Tasks"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="#202020"/>
+                    <TextBlock Grid.Row="1"
+                               Text="Open the local task system"
+                               Margin="0,5,0,0"
+                               FontSize="11"
+                               Foreground="#707070"/>
+                </Grid>
+            </Button>
+
+            <Button Style="{StaticResource ComposerCard}"
+                    Tag="structured-data"
+                    AutomationProperties.AutomationId="ComposerStructuredDataButton"
+                    Click="Navigate_Click">
+                <Grid Margin="16,12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Structured Data"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="#202020"/>
+                    <TextBlock Grid.Row="1"
+                               Text="Workspace-bound local tables"
+                               Margin="0,5,0,0"
+                               FontSize="11"
+                               Foreground="#707070"/>
+                </Grid>
+            </Button>
+
+            <Button Style="{StaticResource ComposerCard}"
+                    Tag="search"
+                    AutomationProperties.AutomationId="ComposerSearchButton"
+                    Click="Navigate_Click">
+                <Grid Margin="16,12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Search"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="#202020"/>
+                    <TextBlock Grid.Row="1"
+                               Text="Find local workspace evidence"
+                               Margin="0,5,0,0"
+                               FontSize="11"
+                               Foreground="#707070"/>
+                </Grid>
+            </Button>
+
+            <Button Style="{StaticResource ComposerCard}"
+                    Tag="repositories"
+                    AutomationProperties.AutomationId="ComposerRepositoriesButton"
+                    Click="Navigate_Click">
+                <Grid Margin="16,12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Repositories"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="#202020"/>
+                    <TextBlock Grid.Row="1"
+                               Text="Inspect local Git repositories"
+                               Margin="0,5,0,0"
+                               FontSize="11"
+                               Foreground="#707070"/>
+                </Grid>
+            </Button>
+
+            <Button Style="{StaticResource ComposerCard}"
+                    Tag="terminal"
+                    AutomationProperties.AutomationId="ComposerTerminalButton"
+                    Click="Navigate_Click">
+                <Grid Margin="16,12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Terminal"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="#202020"/>
+                    <TextBlock Grid.Row="1"
+                               Text="Explicit local command session"
+                               Margin="0,5,0,0"
+                               FontSize="11"
+                               Foreground="#707070"/>
+                </Grid>
+            </Button>
+
+            <Button Style="{StaticResource ComposerCard}"
+                    Tag="backup"
+                    AutomationProperties.AutomationId="ComposerBackupButton"
+                    Click="Navigate_Click">
+                <Grid Margin="16,12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Backup &amp; Restore"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="#202020"/>
+                    <TextBlock Grid.Row="1"
+                               Text="Capture or restore the workspace"
+                               Margin="0,5,0,0"
+                               FontSize="11"
+                               Foreground="#707070"/>
+                </Grid>
+            </Button>
+        </WrapPanel>
+
+        <TextBlock Text="OFFICE"
+                   FontSize="10"
+                   FontWeight="SemiBold"
+                   Foreground="#777777"
+                   Margin="0,16,0,10"/>
+
+        <WrapPanel Width="980" HorizontalAlignment="Left">
+            <Button Style="{StaticResource ComposerCard}"
+                    Tag="documents"
+                    AutomationProperties.AutomationId="ComposerDocumentsButton"
+                    Click="Navigate_Click">
+                <Grid Margin="16,12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Documents"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="#185ABD"/>
+                    <TextBlock Grid.Row="1"
+                               Text="DOCX editing surface"
+                               Margin="0,5,0,0"
+                               FontSize="11"
+                               Foreground="#707070"/>
+                </Grid>
+            </Button>
+
+            <Button Style="{StaticResource ComposerCard}"
+                    Tag="sheets"
+                    AutomationProperties.AutomationId="ComposerSheetsButton"
+                    Click="Navigate_Click">
+                <Grid Margin="16,12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Sheets"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="#107C41"/>
+                    <TextBlock Grid.Row="1"
+                               Text="XLSX editing surface"
+                               Margin="0,5,0,0"
+                               FontSize="11"
+                               Foreground="#707070"/>
+                </Grid>
+            </Button>
+
+            <Button Style="{StaticResource ComposerCard}"
+                    Tag="slides"
+                    AutomationProperties.AutomationId="ComposerSlidesButton"
+                    Click="Navigate_Click">
+                <Grid Margin="16,12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Slides"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="#C43E1C"/>
+                    <TextBlock Grid.Row="1"
+                               Text="PPTX editing surface"
+                               Margin="0,5,0,0"
+                               FontSize="11"
+                               Foreground="#707070"/>
+                </Grid>
+            </Button>
+
+            <Button Style="{StaticResource ComposerCard}"
+                    Tag="pdf"
+                    AutomationProperties.AutomationId="ComposerPdfButton"
+                    Click="Navigate_Click">
+                <Grid Margin="16,12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="PDF"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="#D13438"/>
+                    <TextBlock Grid.Row="1"
+                               Text="PDF editing surface"
+                               Margin="0,5,0,0"
+                               FontSize="11"
+                               Foreground="#707070"/>
+                </Grid>
+            </Button>
+        </WrapPanel>
+
+        <TextBlock Text="OPERATIONS"
+                   FontSize="10"
+                   FontWeight="SemiBold"
+                   Foreground="#777777"
+                   Margin="0,16,0,10"/>
+
+        <WrapPanel Width="980" HorizontalAlignment="Left">
+            <Button Style="{StaticResource ComposerUtilityCard}"
+                    Tag="activity"
+                    AutomationProperties.AutomationId="ComposerActivityButton"
+                    Click="Navigate_Click">
+                <Grid Margin="16,10">
+                    <TextBlock Text="Activity"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                </Grid>
+            </Button>
+
+            <Button Style="{StaticResource ComposerUtilityCard}"
+                    Tag="security"
+                    AutomationProperties.AutomationId="ComposerSecurityButton"
+                    Click="Navigate_Click">
+                <Grid Margin="16,10">
+                    <TextBlock Text="Security"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                </Grid>
+            </Button>
+
+            <Button Style="{StaticResource ComposerUtilityCard}"
+                    Tag="integrations"
+                    AutomationProperties.AutomationId="ComposerIntegrationsButton"
+                    Click="Navigate_Click">
+                <Grid Margin="16,10">
+                    <TextBlock Text="Integrations"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                </Grid>
+            </Button>
+
+            <Button Style="{StaticResource ComposerUtilityCard}"
+                    Tag="settings"
+                    AutomationProperties.AutomationId="ComposerSettingsButton"
+                    Click="Navigate_Click">
+                <Grid Margin="16,10">
+                    <TextBlock Text="Settings"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                </Grid>
+            </Button>
+        </WrapPanel>
+
+        <Border Margin="0,18,0,20"
+                Width="964"
+                HorizontalAlignment="Left"
+                Padding="16"
+                Background="White"
+                BorderBrush="#DDDDDD"
+                BorderThickness="1"
+                CornerRadius="6">
+            <StackPanel>
+                <TextBlock Text="COMPOSER CONTRACT"
+                           FontSize="10"
+                           FontWeight="SemiBold"
+                           Foreground="#777777"/>
+                <TextBlock Margin="0,7,0,0"
+                           FontSize="12"
+                           Foreground="#555555"
+                           TextWrapping="Wrap"
+                           Text="This surface is navigation and composition only. It does not create a second copy of files, tasks, tables, repository state or Office documents. AI is not required."/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>
