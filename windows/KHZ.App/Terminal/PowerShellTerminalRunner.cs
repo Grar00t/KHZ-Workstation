@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,6 +32,13 @@ internal sealed class PowerShellTerminalRunner : ITerminalRunner
 
         var startedAt =
             DateTimeOffset.Now;
+
+        if (IsCurrentProcessElevated())
+        {
+            return Failed(
+                startedAt,
+                "Terminal execution is blocked while KHZ Workstation is running elevated. Restart KHZ Workstation without administrator elevation to use the user terminal.");
+        }
 
         var startInfo =
             new ProcessStartInfo
@@ -250,6 +258,19 @@ internal sealed class PowerShellTerminalRunner : ITerminalRunner
         {
             return string.Empty;
         }
+    }
+
+    private static bool IsCurrentProcessElevated()
+    {
+        using var identity =
+            WindowsIdentity.GetCurrent();
+
+        var principal =
+            new WindowsPrincipal(
+                identity);
+
+        return principal.IsInRole(
+            WindowsBuiltInRole.Administrator);
     }
 
     private static TerminalExecutionResult Failed(
