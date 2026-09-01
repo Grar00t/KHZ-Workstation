@@ -112,6 +112,10 @@ internal sealed class LlamaRuntimeHost : IAsyncDisposable
         Add(startInfo, "--model", settings.ModelPath);
         Add(startInfo, "--ctx-size", settings.ContextSize.ToString());
         Add(startInfo, "--n-gpu-layers", settings.GpuLayers);
+        Add(
+            startInfo,
+            "--reasoning-format",
+            settings.HideReasoning ? "deepseek" : "none");
         startInfo.ArgumentList.Add("--offline");
         startInfo.ArgumentList.Add("--jinja");
         startInfo.ArgumentList.Add("--log-colors");
