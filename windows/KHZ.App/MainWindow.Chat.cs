@@ -55,6 +55,7 @@ public partial class MainWindow
             _chatButton);
 
         AttachChatCollapseHandlers();
+        Closed += MainWindow_ChatClosed;
     }
 
     private Button CreateChatNavigationButton()
@@ -167,5 +168,13 @@ public partial class MainWindow
 
         _chatSurface.Visibility = Visibility.Visible;
         SectionTitle.Text = "Chat";
+    }
+
+    private void MainWindow_ChatClosed(
+        object? sender,
+        EventArgs e)
+    {
+        Closed -= MainWindow_ChatClosed;
+        _chatSurface?.Shutdown();
     }
 }
