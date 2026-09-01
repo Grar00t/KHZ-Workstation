@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -24,8 +25,9 @@ internal sealed class LlamaChatClient : IDisposable
         LocalAiSettings settings,
         CancellationToken cancellationToken = default)
     {
+        var boundedHistory = BoundHistory(history, settings.ContextSize);
         var payload = BuildPayload(
-            history,
+            boundedHistory,
             tools,
             settings,
             includeReasoningFormat: settings.HideReasoning);
@@ -40,7 +42,7 @@ internal sealed class LlamaChatClient : IDisposable
             && LooksLikeUnsupportedReasoningFormat(result.Body))
         {
             payload = BuildPayload(
-                history,
+                boundedHistory,
                 tools,
                 settings,
                 includeReasoningFormat: false);
@@ -101,7 +103,7 @@ internal sealed class LlamaChatClient : IDisposable
             {
                 ["role"] = "system",
                 ["content"] =
-                    "Answer directly. Do not guess or claim a model/vendor identity; the application owns identity. Use tools when workspace evidence or execution is needed. Do not expose hidden reasoning. Distinguish tool observations from inference."
+                    "Answer directly. The application owns model identity. Never claim a vendor/model name; if asked, say the configured model label is shown by KHZ. Use tools when workspace evidence or execution is needed. Do not expose hidden reasoning. Distinguish observed tool results from inference."
             }
         };
 
@@ -152,6 +154,11 @@ internal sealed class LlamaChatClient : IDisposable
             });
         }
 
+        var maxTokens = Math.Clamp(
+            settings.ContextSize / 4,
+            512,
+            4096);
+
         var payload = new JsonObject
         {
             ["model"] = settings.ModelLabel,
@@ -159,7 +166,7 @@ internal sealed class LlamaChatClient : IDisposable
             ["stream"] = false,
             ["temperature"] = 0.2,
             ["top_p"] = 0.9,
-            ["max_tokens"] = 4096
+            ["max_tokens"] = maxTokens
         };
 
         if (includeReasoningFormat)
@@ -187,6 +194,53 @@ internal sealed class LlamaChatClient : IDisposable
         }
 
         return payload;
+    }
+
+    private static IReadOnlyList<ChatMessage> BoundHistory(
+        IReadOnlyList<ChatMessage> history,
+        int contextSize)
+    {
+        if (history.Count == 0)
+            return history;
+
+        // Character budgeting is intentionally conservative because the WPF
+        // host does not own the model tokenizer. Reserve roughly one quarter
+        // of the configured context for the answer and tool schemas.
+        var maxCharacters = Math.Clamp(
+            contextSize * 2,
+            8_000,
+            180_000);
+
+        var selected = new List<ChatMessage>();
+        var used = 0;
+
+        for (var i = history.Count - 1; i >= 0; i--)
+        {
+            var item = history[i];
+            var cost =
+                item.Content.Length
+                + (item.ToolArgumentsJson?.Length ?? 0)
+                + (item.ToolName?.Length ?? 0)
+                + 96;
+
+            if (selected.Count > 0 && used + cost > maxCharacters)
+                break;
+
+            selected.Add(item);
+            used += cost;
+        }
+
+        selected.Reverse();
+
+        // A tool result without its preceding assistant tool call is invalid
+        // OpenAI-style history. Drop leading orphaned tool results after trim.
+        while (selected.Count > 0
+               && selected[0].Role == "tool")
+        {
+            selected.RemoveAt(0);
+        }
+
+        return selected;
     }
 
     private async Task<SendResult> SendAsync(

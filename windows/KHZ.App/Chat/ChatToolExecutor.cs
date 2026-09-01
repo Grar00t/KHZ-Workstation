@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -69,6 +71,13 @@ internal sealed class ChatToolExecutor
             """,
             false),
         new(
+            "replace_text",
+            "Replace one exact text occurrence in a workspace file. Requires the current SHA-256 and explicit user confirmation before the atomic write.",
+            """
+            {"type":"object","properties":{"path":{"type":"string"},"expected_sha256":{"type":"string"},"old_text":{"type":"string"},"new_text":{"type":"string"}},"required":["path","expected_sha256","old_text","new_text"],"additionalProperties":false}
+            """,
+            true),
+        new(
             "run_powershell",
             "Run one PowerShell command in the active workspace/folder. This always requires explicit user confirmation before execution.",
             """
@@ -108,6 +117,13 @@ internal sealed class ChatToolExecutor
                 context,
                 GetString(args, "path") ?? ".",
                 cancellationToken),
+
+            "replace_text" => ReplaceText(
+                context,
+                RequireString(args, "path"),
+                RequireString(args, "expected_sha256"),
+                RequireString(args, "old_text"),
+                RequireString(args, "new_text")),
 
             "run_powershell" => await RunPowerShellAsync(
                 context,
@@ -174,19 +190,17 @@ internal sealed class ChatToolExecutor
         if (info.Length > 4 * 1024 * 1024)
             return Error("file_too_large_for_text_tool", relativePath);
 
-        using var reader = new StreamReader(
-            path,
-            detectEncodingFromByteOrderMarks: true);
-        var buffer = new char[maxChars + 1];
-        var read = reader.ReadBlock(buffer, 0, buffer.Length);
-        var truncated = read > maxChars;
-        var count = Math.Min(read, maxChars);
+        var bytes = File.ReadAllBytes(path);
+        var hash = Sha256(bytes);
+        var text = DecodeText(bytes);
+        var truncated = text.Length > maxChars;
 
         return JsonSerializer.Serialize(new
         {
             ok = true,
             path = ToRelative(context, path),
-            content = new string(buffer, 0, count),
+            sha256 = hash,
+            content = truncated ? text[..maxChars] : text,
             truncated
         });
     }
@@ -273,6 +287,140 @@ internal sealed class ChatToolExecutor
         {
             ok = true,
             snapshot
+        });
+    }
+
+    private string ReplaceText(
+        ChatContext context,
+        string relativePath,
+        string expectedSha256,
+        string oldText,
+        string newText)
+    {
+        if (oldText.Length == 0)
+            return Error("old_text_empty", relativePath);
+
+        if (oldText.Length > 200_000 || newText.Length > 200_000)
+            return Error("replacement_too_large", relativePath);
+
+        var path = ResolveBoundedPath(context, relativePath);
+        if (!File.Exists(path))
+            return Error("file_not_found", relativePath);
+
+        var bytes = File.ReadAllBytes(path);
+        if (bytes.Length > 4 * 1024 * 1024)
+            return Error("file_too_large_for_edit_tool", relativePath);
+
+        var actualHash = Sha256(bytes);
+        expectedSha256 = expectedSha256.Trim().ToLowerInvariant();
+
+        if (!string.Equals(
+                actualHash,
+                expectedSha256,
+                StringComparison.Ordinal))
+        {
+            return JsonSerializer.Serialize(new
+            {
+                ok = false,
+                error = "stale_file",
+                path = ToRelative(context, path),
+                expected_sha256 = expectedSha256,
+                actual_sha256 = actualHash
+            });
+        }
+
+        var text = DecodeText(bytes);
+        var first = text.IndexOf(oldText, StringComparison.Ordinal);
+        if (first < 0)
+            return Error("old_text_not_found", relativePath);
+
+        if (text.IndexOf(
+                oldText,
+                first + oldText.Length,
+                StringComparison.Ordinal) >= 0)
+        {
+            return Error("old_text_not_unique", relativePath);
+        }
+
+        var previewOld = Bound(oldText, 1200);
+        var previewNew = Bound(newText, 1200);
+        var decision = MessageBox.Show(
+            "The local model proposed a bounded text replacement.\n\n" +
+            "File:\n" + ToRelative(context, path) +
+            "\n\nReplace:\n" + previewOld +
+            "\n\nWith:\n" + previewNew +
+            "\n\nApply this edit?",
+            "KHZ · Confirm file edit",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question,
+            MessageBoxResult.No);
+
+        if (decision != MessageBoxResult.Yes)
+        {
+            _activity.Record(
+                category: "ai",
+                action: "tool.replace_text",
+                target: context.ContextId,
+                result: "DENIED",
+                details: new
+                {
+                    pathCaptured = false,
+                    userConfirmed = false,
+                    aiUsed = true
+                });
+
+            return JsonSerializer.Serialize(new
+            {
+                ok = false,
+                denied_by_user = true
+            });
+        }
+
+        var updated = text[..first] + newText + text[(first + oldText.Length)..];
+        var temp = path + ".khz-ai-" + Guid.NewGuid().ToString("N") + ".tmp";
+
+        try
+        {
+            WriteUtf8Atomically(path, temp, updated);
+        }
+        catch
+        {
+            try
+            {
+                if (File.Exists(temp))
+                    File.Delete(temp);
+            }
+            catch
+            {
+            }
+            throw;
+        }
+
+        var afterBytes = File.ReadAllBytes(path);
+        var afterHash = Sha256(afterBytes);
+
+        _activity.Record(
+            category: "ai",
+            action: "tool.replace_text",
+            target: context.ContextId,
+            result: "PASSED",
+            details: new
+            {
+                pathCaptured = false,
+                userConfirmed = true,
+                aiUsed = true,
+                beforeSha256 = actualHash,
+                afterSha256 = afterHash,
+                oldLength = oldText.Length,
+                newLength = newText.Length
+            });
+
+        return JsonSerializer.Serialize(new
+        {
+            ok = true,
+            path = ToRelative(context, path),
+            before_sha256 = actualHash,
+            after_sha256 = afterHash
         });
     }
 
@@ -378,7 +526,11 @@ internal sealed class ChatToolExecutor
     {
         relativePath = (relativePath ?? string.Empty).Trim();
         if (relativePath.Length == 0 || relativePath == ".")
-            return Path.GetFullPath(context.RootPath);
+        {
+            var rootOnly = Path.GetFullPath(context.RootPath);
+            RejectReparseTraversal(rootOnly, rootOnly);
+            return rootOnly;
+        }
 
         if (Path.IsPathRooted(relativePath))
         {
@@ -389,18 +541,13 @@ internal sealed class ChatToolExecutor
         var root = Path.GetFullPath(context.RootPath)
             .TrimEnd(
                 Path.DirectorySeparatorChar,
-                Path.AltDirectorySeparatorChar)
-            + Path.DirectorySeparatorChar;
+                Path.AltDirectorySeparatorChar);
+        var rootPrefix = root + Path.DirectorySeparatorChar;
 
         var candidate = Path.GetFullPath(
             Path.Combine(root, relativePath));
-        if (!candidate.StartsWith(root, StringComparison.OrdinalIgnoreCase)
-            && !string.Equals(
-                candidate.TrimEnd(
-                    Path.DirectorySeparatorChar,
-                    Path.AltDirectorySeparatorChar),
-                root.TrimEnd(Path.DirectorySeparatorChar),
-                StringComparison.OrdinalIgnoreCase))
+        if (!candidate.StartsWith(rootPrefix, StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(candidate, root, StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException(
                 "Tool path escapes the active workspace/folder.");
@@ -425,7 +572,45 @@ internal sealed class ChatToolExecutor
                 "Internal .khz metadata is not exposed to model tools.");
         }
 
+        RejectReparseTraversal(root, candidate);
         return candidate;
+    }
+
+    private static void RejectReparseTraversal(
+        string root,
+        string candidate)
+    {
+        var current = Path.GetFullPath(root);
+        RejectIfExistingReparse(current);
+
+        var relative = Path.GetRelativePath(current, candidate);
+        if (relative == ".")
+            return;
+
+        foreach (var part in relative.Split(
+                     new[]
+                     {
+                         Path.DirectorySeparatorChar,
+                         Path.AltDirectorySeparatorChar
+                     },
+                     StringSplitOptions.RemoveEmptyEntries))
+        {
+            current = Path.Combine(current, part);
+            RejectIfExistingReparse(current);
+        }
+    }
+
+    private static void RejectIfExistingReparse(string path)
+    {
+        if (!File.Exists(path) && !Directory.Exists(path))
+            return;
+
+        var attributes = File.GetAttributes(path);
+        if ((attributes & FileAttributes.ReparsePoint) != 0)
+        {
+            throw new InvalidOperationException(
+                "Model tools do not traverse filesystem reparse points.");
+        }
     }
 
     private static IEnumerable<string> EnumerateFilesSafe(string root)
@@ -450,7 +635,17 @@ internal sealed class ChatToolExecutor
             }
 
             foreach (var file in files)
-                yield return file;
+            {
+                try
+                {
+                    var attributes = File.GetAttributes(file);
+                    if ((attributes & FileAttributes.ReparsePoint) == 0)
+                        yield return file;
+                }
+                catch
+                {
+                }
+            }
 
             foreach (var child in directories)
             {
@@ -477,6 +672,52 @@ internal sealed class ChatToolExecutor
             }
         }
     }
+
+    private static void WriteUtf8Atomically(
+        string path,
+        string temp,
+        string content)
+    {
+        var directory = Path.GetDirectoryName(path)
+            ?? throw new InvalidOperationException(
+                "Target directory could not be resolved.");
+
+        if (!Directory.Exists(directory))
+            throw new DirectoryNotFoundException(directory);
+
+        using (var stream = new FileStream(
+                   temp,
+                   FileMode.CreateNew,
+                   FileAccess.Write,
+                   FileShare.None,
+                   64 * 1024,
+                   FileOptions.WriteThrough))
+        using (var writer = new StreamWriter(
+                   stream,
+                   new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)))
+        {
+            writer.Write(content);
+            writer.Flush();
+            stream.Flush(flushToDisk: true);
+        }
+
+        File.Move(temp, path, overwrite: true);
+    }
+
+    private static string DecodeText(byte[] bytes)
+    {
+        using var stream = new MemoryStream(bytes, writable: false);
+        using var reader = new StreamReader(
+            stream,
+            Encoding.UTF8,
+            detectEncodingFromByteOrderMarks: true,
+            bufferSize: 4096,
+            leaveOpen: false);
+        return reader.ReadToEnd();
+    }
+
+    private static string Sha256(byte[] bytes)
+        => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
 
     private static string ToRelative(
         ChatContext context,

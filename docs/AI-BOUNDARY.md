@@ -27,7 +27,7 @@ Conversations are scoped to one context:
 - a KHZ workspace uses its stable `workspace_id`;
 - folder mode uses a SHA-256-derived context identifier for the normalized folder path.
 
-Changing the active workspace/folder changes the visible conversation set. The raw folder path is not used as a conversation primary key.
+Changing the active workspace/folder changes the visible conversation set. The raw folder path is not used as a conversation primary key. Long conversations are bounded before inference with a conservative character budget so history cannot grow without limit merely because it is stored locally.
 
 ## Tools
 
@@ -37,9 +37,12 @@ The local model can request bounded tools when tools are enabled:
 - `read_file`
 - `search_text`
 - `inspect_repository`
+- `replace_text`
 - `run_powershell`
 
-File/search tools accept relative paths only, reject traversal outside the active workspace/folder, skip reparse-directory traversal, and do not expose `.khz` internal metadata.
+File/search tools accept relative paths only, reject traversal outside the active workspace/folder, reject direct or nested filesystem reparse-point traversal, and do not expose `.khz` internal metadata.
+
+`read_file` returns the current SHA-256. `replace_text` accepts one exact old-text occurrence plus that expected SHA-256. A stale hash or non-unique old text is rejected. The proposed old/new text is shown to the user and the write requires explicit confirmation; publication uses a temporary sibling file followed by replacement and reports the resulting SHA-256.
 
 Repository inspection reuses KHZ's existing read-only repository inspector.
 
@@ -58,6 +61,7 @@ Chat audit events record status, lengths, model label, tool-step counts, and whe
 - Model self-identification authority: NO
 - Model approval authority: NO
 - Model verification authority: NO
+- Direct unconfirmed file mutation: NO
 - Direct unconfirmed PowerShell execution: NO
 - Automatic model downloads: NO
 - AI required for normal workspace use: NO
