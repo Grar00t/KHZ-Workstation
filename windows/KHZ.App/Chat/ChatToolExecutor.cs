@@ -16,7 +16,13 @@ namespace KHZ.App.Chat;
 
 internal sealed class ChatToolExecutor
 {
-    private static readonly HashSet<string> SearchableExtensions =
+    private const int MaxReadBytes = 4 * 1024 * 1024;
+    private const int MaxEditChars = 200_000;
+
+    private static readonly UTF8Encoding StrictUtf8 =
+        new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+    private static readonly HashSet<string> TextExtensions =
         new(StringComparer.OrdinalIgnoreCase)
         {
             ".txt", ".md", ".json", ".jsonl", ".ndjson", ".csv",
@@ -42,48 +48,32 @@ internal sealed class ChatToolExecutor
 
     internal IReadOnlyList<ChatToolDefinition> Definitions { get; } =
     [
-        new(
+        Tool(
             "list_directory",
-            "List files and directories under the active workspace/folder. Use relative paths only.",
-            """
-            {"type":"object","properties":{"path":{"type":"string"}},"required":["path"],"additionalProperties":false}
-            """,
-            false),
-        new(
+            "List files and directories below the active workspace/folder. Paths are relative.",
+            """{"type":"object","properties":{"path":{"type":"string"}},"required":["path"],"additionalProperties":false}"""),
+        Tool(
             "read_file",
-            "Read a UTF-8/text file under the active workspace/folder. Use relative paths only.",
-            """
-            {"type":"object","properties":{"path":{"type":"string"},"max_chars":{"type":"integer","minimum":1,"maximum":200000}},"required":["path"],"additionalProperties":false}
-            """,
-            false),
-        new(
+            "Read a UTF-8 text file below the active workspace/folder and return its SHA-256.",
+            """{"type":"object","properties":{"path":{"type":"string"},"max_chars":{"type":"integer","minimum":1,"maximum":200000}},"required":["path"],"additionalProperties":false}"""),
+        Tool(
             "search_text",
-            "Search text files under the active workspace/folder for a literal query.",
-            """
-            {"type":"object","properties":{"query":{"type":"string"},"path":{"type":"string"}},"required":["query"],"additionalProperties":false}
-            """,
-            false),
-        new(
+            "Search local text files for a literal string.",
+            """{"type":"object","properties":{"query":{"type":"string"},"path":{"type":"string"}},"required":["query"],"additionalProperties":false}"""),
+        Tool(
             "inspect_repository",
-            "Inspect the active local Git repository: root, branch, HEAD, changes and recent commits.",
-            """
-            {"type":"object","properties":{"path":{"type":"string"}},"additionalProperties":false}
-            """,
-            false),
-        new(
+            "Inspect local Git root, branch, HEAD, changes, and recent commits.",
+            """{"type":"object","properties":{"path":{"type":"string"}},"additionalProperties":false}"""),
+        Tool(
             "replace_text",
-            "Replace one exact text occurrence in a workspace file. Requires the current SHA-256 and explicit user confirmation before the atomic write.",
-            """
-            {"type":"object","properties":{"path":{"type":"string"},"expected_sha256":{"type":"string"},"old_text":{"type":"string"},"new_text":{"type":"string"}},"required":["path","expected_sha256","old_text","new_text"],"additionalProperties":false}
-            """,
-            true),
-        new(
+            "Replace one exact text occurrence in a UTF-8 workspace file. Requires the current SHA-256 and user confirmation.",
+            """{"type":"object","properties":{"path":{"type":"string"},"expected_sha256":{"type":"string"},"old_text":{"type":"string"},"new_text":{"type":"string"}},"required":["path","expected_sha256","old_text","new_text"],"additionalProperties":false}""",
+            requiresConfirmation: true),
+        Tool(
             "run_powershell",
-            "Run one PowerShell command in the active workspace/folder. This always requires explicit user confirmation before execution.",
-            """
-            {"type":"object","properties":{"command":{"type":"string"},"timeout_seconds":{"type":"integer","minimum":1,"maximum":300}},"required":["command"],"additionalProperties":false}
-            """,
-            true)
+            "Run one PowerShell command in the active workspace/folder. The exact command requires user confirmation.",
+            """{"type":"object","properties":{"command":{"type":"string"},"timeout_seconds":{"type":"integer","minimum":1,"maximum":300}},"required":["command"],"additionalProperties":false}""",
+            requiresConfirmation: true)
     ];
 
     internal async Task<string> ExecuteAsync(
@@ -91,11 +81,12 @@ internal sealed class ChatToolExecutor
         ChatContext context,
         CancellationToken cancellationToken)
     {
-        using var argsDocument = JsonDocument.Parse(
+        using var parsed = JsonDocument.Parse(
             string.IsNullOrWhiteSpace(call.ArgumentsJson)
                 ? "{}"
                 : call.ArgumentsJson);
-        var args = argsDocument.RootElement;
+
+        var args = parsed.RootElement;
 
         return call.Name switch
         {
@@ -131,20 +122,22 @@ internal sealed class ChatToolExecutor
                 GetInt32(args, "timeout_seconds", 60),
                 cancellationToken),
 
-            _ => JsonSerializer.Serialize(new
-            {
-                ok = false,
-                error = "unknown_tool",
-                tool = call.Name
-            })
+            _ => Error("unknown_tool", call.Name)
         };
     }
+
+    private static ChatToolDefinition Tool(
+        string name,
+        string description,
+        string parameters,
+        bool requiresConfirmation = false)
+        => new(name, description, parameters, requiresConfirmation);
 
     private static string ListDirectory(
         ChatContext context,
         string relativePath)
     {
-        var path = ResolveBoundedPath(context, relativePath);
+        var path = ResolvePath(context, relativePath);
         if (!Directory.Exists(path))
             return Error("directory_not_found", relativePath);
 
@@ -152,11 +145,14 @@ internal sealed class ChatToolExecutor
 
         foreach (var item in new DirectoryInfo(path)
                      .EnumerateFileSystemInfos()
-                     .OrderByDescending(x => x is DirectoryInfo)
-                     .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+                     .OrderByDescending(item => item is DirectoryInfo)
+                     .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
                      .Take(250))
         {
             if (string.Equals(item.Name, ".khz", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (IsReparsePoint(item.FullName))
                 continue;
 
             entries.Add(new
@@ -171,7 +167,7 @@ internal sealed class ChatToolExecutor
         return JsonSerializer.Serialize(new
         {
             ok = true,
-            path = ToRelative(context, path),
+            path = Relative(context, path),
             entries
         });
     }
@@ -181,27 +177,21 @@ internal sealed class ChatToolExecutor
         string relativePath,
         int maxChars)
     {
-        maxChars = Math.Clamp(maxChars, 1, 200_000);
-        var path = ResolveBoundedPath(context, relativePath);
+        var path = ResolvePath(context, relativePath);
         if (!File.Exists(path))
             return Error("file_not_found", relativePath);
 
-        var info = new FileInfo(path);
-        if (info.Length > 4 * 1024 * 1024)
-            return Error("file_too_large_for_text_tool", relativePath);
-
-        var bytes = File.ReadAllBytes(path);
-        var hash = Sha256(bytes);
-        var text = DecodeText(bytes);
-        var truncated = text.Length > maxChars;
+        var bytes = ReadBoundedBytes(path);
+        var text = DecodeUtf8(bytes, out _);
+        maxChars = Math.Clamp(maxChars, 1, MaxEditChars);
 
         return JsonSerializer.Serialize(new
         {
             ok = true,
-            path = ToRelative(context, path),
-            sha256 = hash,
-            content = truncated ? text[..maxChars] : text,
-            truncated
+            path = Relative(context, path),
+            sha256 = Sha256(bytes),
+            content = text.Length <= maxChars ? text : text[..maxChars],
+            truncated = text.Length > maxChars
         });
     }
 
@@ -212,9 +202,9 @@ internal sealed class ChatToolExecutor
     {
         query = query.Trim();
         if (query.Length is < 1 or > 500)
-            return Error("invalid_query", query);
+            return Error("invalid_query", "Query length must be 1-500 characters.");
 
-        var root = ResolveBoundedPath(context, relativePath);
+        var root = ResolvePath(context, relativePath);
         if (!Directory.Exists(root))
             return Error("directory_not_found", relativePath);
 
@@ -226,7 +216,7 @@ internal sealed class ChatToolExecutor
             if (inspected >= 400 || hits.Count >= 80)
                 break;
 
-            if (!SearchableExtensions.Contains(Path.GetExtension(file)))
+            if (!TextExtensions.Contains(Path.GetExtension(file)))
                 continue;
 
             try
@@ -235,24 +225,25 @@ internal sealed class ChatToolExecutor
                 if (info.Length > 1024 * 1024)
                     continue;
 
+                var bytes = File.ReadAllBytes(file);
+                var text = DecodeUtf8(bytes, out _);
                 inspected++;
+
+                using var reader = new StringReader(text);
                 var lineNumber = 0;
-                foreach (var line in File.ReadLines(file))
+                string? line;
+
+                while ((line = reader.ReadLine()) is not null)
                 {
                     lineNumber++;
-                    var index = line.IndexOf(
-                        query,
-                        StringComparison.OrdinalIgnoreCase);
-                    if (index < 0)
+                    if (!line.Contains(query, StringComparison.OrdinalIgnoreCase))
                         continue;
 
                     hits.Add(new
                     {
-                        path = ToRelative(context, file),
+                        path = Relative(context, file),
                         line = lineNumber,
-                        text = line.Length <= 500
-                            ? line
-                            : line[..500] + "…"
+                        text = Bound(line, 500)
                     });
 
                     if (hits.Count >= 80)
@@ -261,6 +252,7 @@ internal sealed class ChatToolExecutor
             }
             catch
             {
+                // Unreadable/non-UTF8 files are excluded from this text tool.
             }
         }
 
@@ -279,10 +271,9 @@ internal sealed class ChatToolExecutor
         string relativePath,
         CancellationToken cancellationToken)
     {
-        var path = ResolveBoundedPath(context, relativePath);
-        var snapshot = await _repositories.InspectAsync(
-            path,
-            cancellationToken);
+        var path = ResolvePath(context, relativePath);
+        var snapshot = await _repositories.InspectAsync(path, cancellationToken);
+
         return JsonSerializer.Serialize(new
         {
             ok = true,
@@ -300,55 +291,42 @@ internal sealed class ChatToolExecutor
         if (oldText.Length == 0)
             return Error("old_text_empty", relativePath);
 
-        if (oldText.Length > 200_000 || newText.Length > 200_000)
+        if (oldText.Length > MaxEditChars || newText.Length > MaxEditChars)
             return Error("replacement_too_large", relativePath);
 
-        var path = ResolveBoundedPath(context, relativePath);
+        var path = ResolvePath(context, relativePath);
         if (!File.Exists(path))
             return Error("file_not_found", relativePath);
 
-        var bytes = File.ReadAllBytes(path);
-        if (bytes.Length > 4 * 1024 * 1024)
-            return Error("file_too_large_for_edit_tool", relativePath);
-
+        var bytes = ReadBoundedBytes(path);
         var actualHash = Sha256(bytes);
-        expectedSha256 = expectedSha256.Trim().ToLowerInvariant();
+        var expected = expectedSha256.Trim().ToLowerInvariant();
 
-        if (!string.Equals(
-                actualHash,
-                expectedSha256,
-                StringComparison.Ordinal))
+        if (!string.Equals(actualHash, expected, StringComparison.Ordinal))
         {
             return JsonSerializer.Serialize(new
             {
                 ok = false,
                 error = "stale_file",
-                path = ToRelative(context, path),
-                expected_sha256 = expectedSha256,
+                path = Relative(context, path),
+                expected_sha256 = expected,
                 actual_sha256 = actualHash
             });
         }
 
-        var text = DecodeText(bytes);
+        var text = DecodeUtf8(bytes, out var hadBom);
         var first = text.IndexOf(oldText, StringComparison.Ordinal);
         if (first < 0)
             return Error("old_text_not_found", relativePath);
 
-        if (text.IndexOf(
-                oldText,
-                first + oldText.Length,
-                StringComparison.Ordinal) >= 0)
-        {
+        if (text.IndexOf(oldText, first + oldText.Length, StringComparison.Ordinal) >= 0)
             return Error("old_text_not_unique", relativePath);
-        }
 
-        var previewOld = Bound(oldText, 1200);
-        var previewNew = Bound(newText, 1200);
         var decision = MessageBox.Show(
-            "The local model proposed a bounded text replacement.\n\n" +
-            "File:\n" + ToRelative(context, path) +
-            "\n\nReplace:\n" + previewOld +
-            "\n\nWith:\n" + previewNew +
+            "The local model proposed this file edit:\n\n" +
+            "File:\n" + Relative(context, path) +
+            "\n\nReplace:\n" + Bound(oldText, 1200) +
+            "\n\nWith:\n" + Bound(newText, 1200) +
             "\n\nApply this edit?",
             "KHZ · Confirm file edit",
             MessageBoxButton.YesNo,
@@ -357,44 +335,12 @@ internal sealed class ChatToolExecutor
 
         if (decision != MessageBoxResult.Yes)
         {
-            _activity.Record(
-                category: "ai",
-                action: "tool.replace_text",
-                target: context.ContextId,
-                result: "DENIED",
-                details: new
-                {
-                    pathCaptured = false,
-                    userConfirmed = false,
-                    aiUsed = true
-                });
-
-            return JsonSerializer.Serialize(new
-            {
-                ok = false,
-                denied_by_user = true
-            });
+            AuditMutation("tool.replace_text", context, "DENIED", false);
+            return JsonSerializer.Serialize(new { ok = false, denied_by_user = true });
         }
 
         var updated = text[..first] + newText + text[(first + oldText.Length)..];
-        var temp = path + ".khz-ai-" + Guid.NewGuid().ToString("N") + ".tmp";
-
-        try
-        {
-            WriteUtf8Atomically(path, temp, updated);
-        }
-        catch
-        {
-            try
-            {
-                if (File.Exists(temp))
-                    File.Delete(temp);
-            }
-            catch
-            {
-            }
-            throw;
-        }
+        WriteTextAtomically(path, updated, hadBom);
 
         var afterBytes = File.ReadAllBytes(path);
         var afterHash = Sha256(afterBytes);
@@ -418,7 +364,7 @@ internal sealed class ChatToolExecutor
         return JsonSerializer.Serialize(new
         {
             ok = true,
-            path = ToRelative(context, path),
+            path = Relative(context, path),
             before_sha256 = actualHash,
             after_sha256 = afterHash
         });
@@ -432,11 +378,7 @@ internal sealed class ChatToolExecutor
     {
         command = command.Trim();
         if (command.Length is < 1 or > 16_384)
-        {
-            return Error(
-                "invalid_command",
-                "PowerShell command length is invalid.");
-        }
+            return Error("invalid_command", "Command length must be 1-16384 characters.");
 
         timeoutSeconds = Math.Clamp(timeoutSeconds, 1, 300);
 
@@ -451,23 +393,8 @@ internal sealed class ChatToolExecutor
 
         if (decision != MessageBoxResult.Yes)
         {
-            _activity.Record(
-                category: "ai",
-                action: "tool.run_powershell",
-                target: context.ContextId,
-                result: "DENIED",
-                details: new
-                {
-                    commandCaptured = false,
-                    userConfirmed = false,
-                    aiUsed = true
-                });
-
-            return JsonSerializer.Serialize(new
-            {
-                ok = false,
-                denied_by_user = true
-            });
+            AuditMutation("tool.run_powershell", context, "DENIED", false);
+            return JsonSerializer.Serialize(new { ok = false, denied_by_user = true });
         }
 
         _activity.Record(
@@ -490,15 +417,14 @@ internal sealed class ChatToolExecutor
                 Timeout: TimeSpan.FromSeconds(timeoutSeconds)),
             cancellationToken);
 
-        var succeeded =
-            result.Status == TerminalExecutionStatus.Exited
-            && result.ExitCode == 0;
+        var passed = result.Status == TerminalExecutionStatus.Exited
+                     && result.ExitCode == 0;
 
         _activity.Record(
             category: "ai",
             action: "tool.run_powershell",
             target: context.ContextId,
-            result: succeeded ? "PASSED" : "FAILED",
+            result: passed ? "PASSED" : "FAILED",
             details: new
             {
                 commandCaptured = false,
@@ -512,7 +438,7 @@ internal sealed class ChatToolExecutor
 
         return JsonSerializer.Serialize(new
         {
-            ok = succeeded,
+            ok = passed,
             status = result.Status.ToString(),
             exit_code = result.ExitCode,
             stdout = Bound(result.StandardOutput, 100_000),
@@ -520,98 +446,81 @@ internal sealed class ChatToolExecutor
         });
     }
 
-    private static string ResolveBoundedPath(
+    private void AuditMutation(
+        string action,
+        ChatContext context,
+        string result,
+        bool confirmed)
+        => _activity.Record(
+            category: "ai",
+            action: action,
+            target: context.ContextId,
+            result: result,
+            details: new
+            {
+                userConfirmed = confirmed,
+                aiUsed = true,
+                rawPayloadCaptured = false
+            });
+
+    private static string ResolvePath(
         ChatContext context,
         string relativePath)
     {
-        relativePath = (relativePath ?? string.Empty).Trim();
-        if (relativePath.Length == 0 || relativePath == ".")
-        {
-            var rootOnly = Path.GetFullPath(context.RootPath);
-            RejectReparseTraversal(rootOnly, rootOnly);
-            return rootOnly;
-        }
-
-        if (Path.IsPathRooted(relativePath))
-        {
-            throw new InvalidOperationException(
-                "Tool paths must be relative to the active workspace/folder.");
-        }
-
         var root = Path.GetFullPath(context.RootPath)
-            .TrimEnd(
-                Path.DirectorySeparatorChar,
-                Path.AltDirectorySeparatorChar);
-        var rootPrefix = root + Path.DirectorySeparatorChar;
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
-        var candidate = Path.GetFullPath(
-            Path.Combine(root, relativePath));
-        if (!candidate.StartsWith(rootPrefix, StringComparison.OrdinalIgnoreCase)
-            && !string.Equals(candidate, root, StringComparison.OrdinalIgnoreCase))
+        relativePath = (relativePath ?? string.Empty).Trim();
+        var candidate = relativePath.Length == 0 || relativePath == "."
+            ? root
+            : Path.IsPathRooted(relativePath)
+                ? throw new InvalidOperationException("Tool paths must be relative.")
+                : Path.GetFullPath(Path.Combine(root, relativePath));
+
+        var prefix = root + Path.DirectorySeparatorChar;
+        if (!string.Equals(candidate, root, StringComparison.OrdinalIgnoreCase)
+            && !candidate.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException(
-                "Tool path escapes the active workspace/folder.");
+            throw new InvalidOperationException("Tool path escapes the active workspace/folder.");
         }
 
-        var relative = Path.GetRelativePath(root, candidate);
-        var parts = relative.Split(
-            new[]
-            {
-                Path.DirectorySeparatorChar,
-                Path.AltDirectorySeparatorChar
-            },
+        var parts = Path.GetRelativePath(root, candidate).Split(
+            new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
             StringSplitOptions.RemoveEmptyEntries);
 
-        if (parts.Any(
-                part => string.Equals(
-                    part,
-                    ".khz",
-                    StringComparison.OrdinalIgnoreCase)))
-        {
-            throw new InvalidOperationException(
-                "Internal .khz metadata is not exposed to model tools.");
-        }
+        if (parts.Any(part => string.Equals(part, ".khz", StringComparison.OrdinalIgnoreCase)))
+            throw new InvalidOperationException("Internal .khz metadata is not exposed to model tools.");
 
         RejectReparseTraversal(root, candidate);
         return candidate;
     }
 
-    private static void RejectReparseTraversal(
-        string root,
-        string candidate)
+    private static void RejectReparseTraversal(string root, string candidate)
     {
-        var current = Path.GetFullPath(root);
-        RejectIfExistingReparse(current);
+        var current = root;
+        RejectIfReparse(current);
 
-        var relative = Path.GetRelativePath(current, candidate);
+        var relative = Path.GetRelativePath(root, candidate);
         if (relative == ".")
             return;
 
         foreach (var part in relative.Split(
-                     new[]
-                     {
-                         Path.DirectorySeparatorChar,
-                         Path.AltDirectorySeparatorChar
-                     },
+                     new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
                      StringSplitOptions.RemoveEmptyEntries))
         {
             current = Path.Combine(current, part);
-            RejectIfExistingReparse(current);
+            RejectIfReparse(current);
         }
     }
 
-    private static void RejectIfExistingReparse(string path)
+    private static void RejectIfReparse(string path)
     {
-        if (!File.Exists(path) && !Directory.Exists(path))
-            return;
-
-        var attributes = File.GetAttributes(path);
-        if ((attributes & FileAttributes.ReparsePoint) != 0)
-        {
-            throw new InvalidOperationException(
-                "Model tools do not traverse filesystem reparse points.");
-        }
+        if ((File.Exists(path) || Directory.Exists(path)) && IsReparsePoint(path))
+            throw new InvalidOperationException("Model tools do not traverse filesystem reparse points.");
     }
+
+    private static bool IsReparsePoint(string path)
+        => (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
 
     private static IEnumerable<string> EnumerateFilesSafe(string root)
     {
@@ -621,13 +530,13 @@ internal sealed class ChatToolExecutor
         while (pending.Count > 0)
         {
             var directory = pending.Pop();
-            IEnumerable<string> files;
-            IEnumerable<string> directories;
+            string[] files;
+            string[] directories;
 
             try
             {
-                files = Directory.EnumerateFiles(directory).ToArray();
-                directories = Directory.EnumerateDirectories(directory).ToArray();
+                files = Directory.GetFiles(directory);
+                directories = Directory.GetDirectories(directory);
             }
             catch
             {
@@ -636,128 +545,119 @@ internal sealed class ChatToolExecutor
 
             foreach (var file in files)
             {
+                var include = false;
                 try
                 {
-                    var attributes = File.GetAttributes(file);
-                    if ((attributes & FileAttributes.ReparsePoint) == 0)
-                        yield return file;
+                    include = !IsReparsePoint(file);
                 }
                 catch
                 {
                 }
+
+                if (include)
+                    yield return file;
             }
 
             foreach (var child in directories)
             {
-                if (string.Equals(
-                        Path.GetFileName(child),
-                        ".khz",
-                        StringComparison.OrdinalIgnoreCase))
-                {
+                if (string.Equals(Path.GetFileName(child), ".khz", StringComparison.OrdinalIgnoreCase))
                     continue;
-                }
 
                 try
                 {
-                    var attributes = File.GetAttributes(child);
-                    if ((attributes & FileAttributes.ReparsePoint) != 0)
-                        continue;
+                    if (!IsReparsePoint(child))
+                        pending.Push(child);
                 }
                 catch
                 {
-                    continue;
                 }
-
-                pending.Push(child);
             }
         }
     }
 
-    private static void WriteUtf8Atomically(
-        string path,
-        string temp,
-        string content)
+    private static byte[] ReadBoundedBytes(string path)
     {
-        var directory = Path.GetDirectoryName(path)
-            ?? throw new InvalidOperationException(
-                "Target directory could not be resolved.");
-
-        if (!Directory.Exists(directory))
-            throw new DirectoryNotFoundException(directory);
-
-        using (var stream = new FileStream(
-                   temp,
-                   FileMode.CreateNew,
-                   FileAccess.Write,
-                   FileShare.None,
-                   64 * 1024,
-                   FileOptions.WriteThrough))
-        using (var writer = new StreamWriter(
-                   stream,
-                   new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)))
-        {
-            writer.Write(content);
-            writer.Flush();
-            stream.Flush(flushToDisk: true);
-        }
-
-        File.Move(temp, path, overwrite: true);
+        var info = new FileInfo(path);
+        if (info.Length > MaxReadBytes)
+            throw new InvalidDataException("File is too large for the local text tool.");
+        return File.ReadAllBytes(path);
     }
 
-    private static string DecodeText(byte[] bytes)
+    private static string DecodeUtf8(byte[] bytes, out bool hadBom)
     {
-        using var stream = new MemoryStream(bytes, writable: false);
-        using var reader = new StreamReader(
-            stream,
-            Encoding.UTF8,
-            detectEncodingFromByteOrderMarks: true,
-            bufferSize: 4096,
-            leaveOpen: false);
-        return reader.ReadToEnd();
+        hadBom = bytes.Length >= 3
+                 && bytes[0] == 0xEF
+                 && bytes[1] == 0xBB
+                 && bytes[2] == 0xBF;
+
+        var offset = hadBom ? 3 : 0;
+        return StrictUtf8.GetString(bytes, offset, bytes.Length - offset);
+    }
+
+    private static void WriteTextAtomically(
+        string path,
+        string content,
+        bool emitBom)
+    {
+        var temp = path + ".khz-ai-" + Guid.NewGuid().ToString("N") + ".tmp";
+        var encoding = new UTF8Encoding(emitBom, throwOnInvalidBytes: true);
+
+        try
+        {
+            using (var stream = new FileStream(
+                       temp,
+                       FileMode.CreateNew,
+                       FileAccess.Write,
+                       FileShare.None,
+                       64 * 1024,
+                       FileOptions.WriteThrough))
+            using (var writer = new StreamWriter(stream, encoding))
+            {
+                writer.Write(content);
+                writer.Flush();
+                stream.Flush(flushToDisk: true);
+            }
+
+            File.Replace(temp, path, destinationBackupFileName: null, ignoreMetadataErrors: true);
+        }
+        finally
+        {
+            try
+            {
+                if (File.Exists(temp))
+                    File.Delete(temp);
+            }
+            catch
+            {
+            }
+        }
     }
 
     private static string Sha256(byte[] bytes)
         => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
 
-    private static string ToRelative(
-        ChatContext context,
-        string path)
+    private static string Relative(ChatContext context, string path)
         => Path.GetRelativePath(context.RootPath, path);
 
-    private static string RequireString(
-        JsonElement args,
-        string name)
+    private static string RequireString(JsonElement args, string name)
         => GetString(args, name)
-           ?? throw new InvalidDataException(
-               $"Tool argument '{name}' is required.");
+           ?? throw new InvalidDataException($"Tool argument '{name}' is required.");
 
-    private static string? GetString(
-        JsonElement args,
-        string name)
+    private static string? GetString(JsonElement args, string name)
         => args.TryGetProperty(name, out var value)
            && value.ValueKind == JsonValueKind.String
             ? value.GetString()
             : null;
 
-    private static int GetInt32(
-        JsonElement args,
-        string name,
-        int fallback)
+    private static int GetInt32(JsonElement args, string name, int fallback)
         => args.TryGetProperty(name, out var value)
            && value.TryGetInt32(out var parsed)
             ? parsed
             : fallback;
 
     private static string Error(string code, string detail)
-        => JsonSerializer.Serialize(new
-        {
-            ok = false,
-            error = code,
-            detail
-        });
+        => JsonSerializer.Serialize(new { ok = false, error = code, detail });
 
     private static string Bound(string value, int max)
-        => value.Length <= max
-            ? value
-            : value[..max] + "\n[truncated]";
+        => value.Length <= max ? value : value[..max] + "…";
 }
