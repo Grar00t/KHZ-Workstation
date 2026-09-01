@@ -146,6 +146,20 @@
                         </StackPanel>
                     </Button>
 
+                    <Button x:Name="StructuredDataButton"
+                            AutomationProperties.AutomationId="StructuredDataButton"
+                            Style="{StaticResource NavButton}"
+                            Click="StructuredData_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="▥"
+                                       FontSize="16"
+                                       Width="28"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="Structured Data"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
                     <Button x:Name="RepositoriesButton"
                             Style="{StaticResource NavButton}"
                             Click="Repositories_Click">
@@ -676,6 +690,9 @@
 
                 <views:TasksView x:Name="TasksSurface"
                                  Visibility="Collapsed"/>
+
+                <views:StructuredDataView x:Name="StructuredDataSurface"
+                                          Visibility="Collapsed"/>
 
                 <views:RepositoriesView x:Name="RepositoriesSurface"
                                         Visibility="Collapsed"/>

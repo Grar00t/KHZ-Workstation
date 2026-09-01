@@ -120,6 +120,9 @@ public partial class MainWindow : Window
             _taskStore,
             _activity);
 
+        StructuredDataSurface.Configure(
+            _activity);
+
         RepositoriesSurface.Configure(
             _repositoryInspector,
             _activity,
@@ -283,6 +286,9 @@ public partial class MainWindow : Window
     {
         _activeWorkspace = context;
 
+        StructuredDataSurface.SetWorkspace(
+            context);
+
         UpdateWorkspaceIndicator();
 
         _activity.Record(
@@ -338,6 +344,9 @@ public partial class MainWindow : Window
             _activeWorkspace.Info.WorkspaceId;
 
         _activeWorkspace = null;
+
+        StructuredDataSurface.SetWorkspace(
+            null);
 
         UpdateWorkspaceIndicator();
 
@@ -428,6 +437,7 @@ public partial class MainWindow : Window
         RepositoriesSurface.Visibility = Visibility.Collapsed;
         TerminalSurface.Visibility = Visibility.Collapsed;
         SearchSurface.Visibility = Visibility.Collapsed;
+        StructuredDataSurface.Visibility = Visibility.Collapsed;
 
         if (OfficeWeb.CoreWebView2 is null)
             return;
@@ -467,6 +477,7 @@ public partial class MainWindow : Window
         SearchSurface.Visibility = Visibility.Collapsed;
 
         OfficeWeb.Visibility = Visibility.Collapsed;
+        StructuredDataSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         HomeSurface.Visibility = Visibility.Visible;
         SectionTitle.Text = "Home";
@@ -548,6 +559,7 @@ public partial class MainWindow : Window
 
         HomeSurface.Visibility = Visibility.Collapsed;
         OfficeWeb.Visibility = Visibility.Collapsed;
+        StructuredDataSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Visible;
         SectionTitle.Text = "Files";
 
@@ -883,6 +895,7 @@ public partial class MainWindow : Window
             result: "OPENED");
 
         OfficeWeb.Visibility = Visibility.Collapsed;
+        StructuredDataSurface.Visibility = Visibility.Collapsed;
         HomeSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
@@ -910,6 +923,7 @@ public partial class MainWindow : Window
             result: "OPENED");
 
         OfficeWeb.Visibility = Visibility.Collapsed;
+        StructuredDataSurface.Visibility = Visibility.Collapsed;
         HomeSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
@@ -937,6 +951,7 @@ public partial class MainWindow : Window
             result: "OPENED");
 
         OfficeWeb.Visibility = Visibility.Collapsed;
+        StructuredDataSurface.Visibility = Visibility.Collapsed;
         HomeSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
@@ -955,6 +970,38 @@ public partial class MainWindow : Window
         SectionTitle.Text = "Terminal";
     }
 
+    private void StructuredData_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        _activity.Record(
+            category: "navigation",
+            action: "structured-data.open",
+            target: "structured-data",
+            result: "OPENED");
+
+        OfficeWeb.Visibility = Visibility.Collapsed;
+        HomeSurface.Visibility = Visibility.Collapsed;
+        FilesSurface.Visibility = Visibility.Collapsed;
+        ActivitySurface.Visibility = Visibility.Collapsed;
+        SecuritySurface.Visibility = Visibility.Collapsed;
+        IntegrationsSurface.Visibility = Visibility.Collapsed;
+        SettingsSurface.Visibility = Visibility.Collapsed;
+        SearchSurface.Visibility = Visibility.Collapsed;
+        TasksSurface.Visibility = Visibility.Collapsed;
+        RepositoriesSurface.Visibility = Visibility.Collapsed;
+        TerminalSurface.Visibility = Visibility.Collapsed;
+
+        StructuredDataSurface.SetWorkspace(
+            _activeWorkspace);
+
+        StructuredDataSurface.Visibility =
+            Visibility.Visible;
+
+        SectionTitle.Text =
+            "Structured Data";
+    }
+
     private void Repositories_Click(
         object sender,
         RoutedEventArgs e)
@@ -966,6 +1013,7 @@ public partial class MainWindow : Window
             result: "OPENED");
 
         OfficeWeb.Visibility = Visibility.Collapsed;
+        StructuredDataSurface.Visibility = Visibility.Collapsed;
         HomeSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
@@ -993,6 +1041,7 @@ public partial class MainWindow : Window
             result: "OPENED");
 
         OfficeWeb.Visibility = Visibility.Collapsed;
+        StructuredDataSurface.Visibility = Visibility.Collapsed;
         HomeSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
@@ -1018,6 +1067,7 @@ public partial class MainWindow : Window
             result: "OPENED");
 
         OfficeWeb.Visibility = Visibility.Collapsed;
+        StructuredDataSurface.Visibility = Visibility.Collapsed;
         HomeSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
@@ -1048,6 +1098,7 @@ public partial class MainWindow : Window
             result: "OPENED");
 
         OfficeWeb.Visibility = Visibility.Collapsed;
+        StructuredDataSurface.Visibility = Visibility.Collapsed;
         HomeSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
@@ -1074,6 +1125,7 @@ public partial class MainWindow : Window
             result: "OPENED");
 
         OfficeWeb.Visibility = Visibility.Collapsed;
+        StructuredDataSurface.Visibility = Visibility.Collapsed;
         HomeSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
