@@ -8,6 +8,11 @@ internal interface IWorkspaceDataStore
         string name,
         IReadOnlyList<DataColumnDefinition> columns);
 
+    string CreateTableWithRows(
+        string name,
+        IReadOnlyList<DataColumnDefinition> columns,
+        IReadOnlyList<IReadOnlyDictionary<string, object?>> rows);
+
     IReadOnlyList<DataTableInfo> ListTables();
 
     string AddRow(

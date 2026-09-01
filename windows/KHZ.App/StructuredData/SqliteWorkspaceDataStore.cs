@@ -69,7 +69,20 @@ internal sealed class SqliteWorkspaceDataStore
     public string CreateTable(
         string name,
         IReadOnlyList<DataColumnDefinition> columns)
+        => CreateTableWithRows(
+            name,
+            columns,
+            Array.Empty<
+                IReadOnlyDictionary<string, object?>>());
+
+    public string CreateTableWithRows(
+        string name,
+        IReadOnlyList<DataColumnDefinition> columns,
+        IReadOnlyList<IReadOnlyDictionary<string, object?>> rows)
     {
+        ArgumentNullException.ThrowIfNull(
+            rows);
+
         var normalizedName =
             NormalizeIdentifier(
                 name,
@@ -87,6 +100,11 @@ internal sealed class SqliteWorkspaceDataStore
             "data_"
             + Guid.NewGuid()
                 .ToString("N");
+
+        var createdUtc =
+            DateTimeOffset.UtcNow.ToString(
+                "O",
+                CultureInfo.InvariantCulture);
 
         var schemaJson =
             JsonSerializer.Serialize(
@@ -183,11 +201,27 @@ internal sealed class SqliteWorkspaceDataStore
 
                 catalog.Parameters.AddWithValue(
                     "$created_utc",
-                    DateTimeOffset.UtcNow.ToString(
-                        "O",
-                        CultureInfo.InvariantCulture));
+                    createdUtc);
 
                 catalog.ExecuteNonQuery();
+            }
+
+            var table =
+                new DataTableInfo(
+                    TableId: tableId,
+                    WorkspaceId: _workspaceId,
+                    Name: normalizedName,
+                    SqlName: sqlName,
+                    Columns: normalizedColumns,
+                    CreatedUtc: createdUtc);
+
+            foreach (var values in rows)
+            {
+                InsertRowInTransaction(
+                    connection,
+                    transaction,
+                    table,
+                    values);
             }
 
             transaction.Commit();
@@ -255,11 +289,8 @@ internal sealed class SqliteWorkspaceDataStore
         string tableId,
         IReadOnlyDictionary<string, object?> values)
     {
-        if (values is null)
-        {
-            throw new ArgumentNullException(
-                nameof(values));
-        }
+        ArgumentNullException.ThrowIfNull(
+            values);
 
         var normalizedTableId =
             NormalizeTableId(
@@ -280,106 +311,12 @@ internal sealed class SqliteWorkspaceDataStore
                     transaction,
                     normalizedTableId);
 
-            var columns =
-                table.Columns.ToDictionary(
-                    x => x.Name,
-                    StringComparer.OrdinalIgnoreCase);
-
-            var normalizedValues =
-                new List<(
-                    string Name,
-                    object Value)>();
-
-            foreach (var pair in values)
-            {
-                if (!columns.TryGetValue(
-                        pair.Key,
-                        out var column))
-                {
-                    throw new ArgumentException(
-                        $"Unknown data column: {pair.Key}",
-                        nameof(values));
-                }
-
-                normalizedValues.Add(
-                    (
-                        column.Name,
-                        ToSqliteValue(
-                            column.Type,
-                            pair.Value)
-                    ));
-            }
-
             var rowId =
-                Guid.NewGuid()
-                    .ToString("D");
-
-            using var insert =
-                connection.CreateCommand();
-
-            insert.Transaction =
-                transaction;
-
-            if (normalizedValues.Count == 0)
-            {
-                insert.CommandText =
-                    $"""
-                    INSERT INTO {QuoteIdentifier(table.SqlName)}
-                    (
-                        row_id
-                    )
-                    VALUES
-                    (
-                        $row_id
-                    );
-                    """;
-            }
-            else
-            {
-                var columnSql =
-                    string.Join(
-                        ", ",
-                        normalizedValues.Select(
-                            x =>
-                                QuoteIdentifier(
-                                    x.Name)));
-
-                var parameterSql =
-                    string.Join(
-                        ", ",
-                        normalizedValues.Select(
-                            (_, index) =>
-                                $"$value_{index}"));
-
-                insert.CommandText =
-                    $"""
-                    INSERT INTO {QuoteIdentifier(table.SqlName)}
-                    (
-                        row_id,
-                        {columnSql}
-                    )
-                    VALUES
-                    (
-                        $row_id,
-                        {parameterSql}
-                    );
-                    """;
-            }
-
-            insert.Parameters.AddWithValue(
-                "$row_id",
-                rowId);
-
-            for (var i = 0;
-                 i < normalizedValues.Count;
-                 i++)
-            {
-                insert.Parameters.AddWithValue(
-                    $"$value_{i}",
-                    normalizedValues[i].Value);
-            }
-
-            insert.ExecuteNonQuery();
+                InsertRowInTransaction(
+                    connection,
+                    transaction,
+                    table,
+                    values);
 
             transaction.Commit();
 
@@ -578,6 +515,131 @@ internal sealed class SqliteWorkspaceDataStore
         return new DataQueryResult(
             Columns: columns,
             Rows: rows);
+    }
+
+    private static string InsertRowInTransaction(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        DataTableInfo table,
+        IReadOnlyDictionary<string, object?> values)
+    {
+        ArgumentNullException.ThrowIfNull(
+            values);
+
+        var columns =
+            table.Columns.ToDictionary(
+                x => x.Name,
+                StringComparer.OrdinalIgnoreCase);
+
+        var seenColumns =
+            new HashSet<string>(
+                StringComparer.OrdinalIgnoreCase);
+
+        var normalizedValues =
+            new List<(
+                string Name,
+                object Value)>();
+
+        foreach (var pair in values)
+        {
+            if (!columns.TryGetValue(
+                    pair.Key,
+                    out var column))
+            {
+                throw new ArgumentException(
+                    $"Unknown data column: {pair.Key}",
+                    nameof(values));
+            }
+
+            if (!seenColumns.Add(
+                    column.Name))
+            {
+                throw new ArgumentException(
+                    $"Duplicate data column value: {column.Name}",
+                    nameof(values));
+            }
+
+            normalizedValues.Add(
+                (
+                    column.Name,
+                    ToSqliteValue(
+                        column.Type,
+                        pair.Value)
+                ));
+        }
+
+        var rowId =
+            Guid.NewGuid()
+                .ToString("D");
+
+        using var insert =
+            connection.CreateCommand();
+
+        insert.Transaction =
+            transaction;
+
+        if (normalizedValues.Count == 0)
+        {
+            insert.CommandText =
+                $"""
+                INSERT INTO {QuoteIdentifier(table.SqlName)}
+                (
+                    row_id
+                )
+                VALUES
+                (
+                    $row_id
+                );
+                """;
+        }
+        else
+        {
+            var columnSql =
+                string.Join(
+                    ", ",
+                    normalizedValues.Select(
+                        x =>
+                            QuoteIdentifier(
+                                x.Name)));
+
+            var parameterSql =
+                string.Join(
+                    ", ",
+                    normalizedValues.Select(
+                        (_, index) =>
+                            $"$value_{index}"));
+
+            insert.CommandText =
+                $"""
+                INSERT INTO {QuoteIdentifier(table.SqlName)}
+                (
+                    row_id,
+                    {columnSql}
+                )
+                VALUES
+                (
+                    $row_id,
+                    {parameterSql}
+                );
+                """;
+        }
+
+        insert.Parameters.AddWithValue(
+            "$row_id",
+            rowId);
+
+        for (var i = 0;
+             i < normalizedValues.Count;
+             i++)
+        {
+            insert.Parameters.AddWithValue(
+                $"$value_{i}",
+                normalizedValues[i].Value);
+        }
+
+        insert.ExecuteNonQuery();
+
+        return rowId;
     }
 
     private SqliteConnection OpenConnection(
