@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   core:
     strategy:
@@ -28,3 +31,15 @@ jobs:
         env:
           PYTHONPATH: src
         run: python scripts/no_ai_baseline.py
+
+  windows-app:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - name: Restore Windows app
+        run: dotnet restore windows/KHZ.Workstation.sln
+      - name: Build Windows app
+        run: dotnet build windows/KHZ.Workstation.sln -c Release --no-restore
