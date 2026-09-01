@@ -1,49 +1,90 @@
 # Office Licensing Boundary
 
-This is technical documentation for legal review, not legal advice.
+This document records the current technical integration shapes for legal and distribution review. It is not legal advice.
 
-## Selected integration
+## KHZ source
 
-KHZ Workstation detects and launches an **administrator/user-installed, unmodified LibreOffice executable**. LibreOffice binaries are not included in this ZIP.
+KHZ Workstation source is Apache-2.0 unless a file states otherwise.
 
-LibreOffice states that the project is made available under MPLv2 and contains additional components under other open-source licenses. The deployed LibreOffice installation must retain its own notices/licenses.
+Third-party Office engines remain separate projects with their own licenses, notices, trademarks, and distribution terms.
 
-KHZ source itself is Apache-2.0.
+## Two evidence classes currently exist
+
+### 1. LibreOffice acceptance baseline
+
+The original acceptance build detected and launched an administrator/user-installed, unmodified LibreOffice executable.
+
+For that baseline:
+
+- LibreOffice binaries were not bundled in the KHZ package;
+- KHZ did not link to LibreOffice libraries;
+- KHZ did not embed LibreOfficeKit;
+- KHZ did not fork or modify LibreOffice source;
+- the external-process integration was the engine used for the compatibility corpus in that build.
+
+This remains historical verification evidence.
+
+### 2. ONLYOFFICE embedded spike
+
+KHZ now also contains an experimental local ONLYOFFICE Document Server integration under `tools/office-spike/` plus a WPF WebView2 host that reaches the KHZ Office gateway on loopback port 8090.
+
+This is a materially different integration form from launching an unmodified desktop executable.
+
+The current spike:
+
+- pins an `onlyoffice/documentserver` container image by digest;
+- runs it on an internal Docker network;
+- exposes the editor API to the host through loopback;
+- disables plugins and metrics in the spike container;
+- explicitly runs with JWT disabled and labels that state `JWT_DISABLED_SPIKE_ONLY`.
+
+Therefore the spike must not be represented as a production-approved packaging or licensing model.
 
 ## Integration forms are not equivalent
 
-The deployment review must distinguish:
-
-| Integration form | Current KHZ behavior |
+| Integration form | KHZ status |
 |---|---|
-| Use unmodified external executable | **YES** - LibreOffice |
-| Link to LibreOffice libraries | NO |
-| Embed LibreOfficeKit | NO |
-| Fork/modify LibreOffice source | NO |
-| Redistribute LibreOffice binaries inside KHZ ZIP | NO |
-| Network-integrate a document server | NO |
-| White-label third-party Office UI | NO |
+| Use unmodified external LibreOffice executable | Historical acceptance baseline |
+| Link to LibreOffice libraries | No |
+| Embed LibreOfficeKit | No |
+| Fork/modify LibreOffice source | No |
+| Bundle LibreOffice binaries inside KHZ | No in the reviewed baseline |
+| Detect unmodified ONLYOFFICE Desktop Editors as an external tool | Existing fallback path |
+| Network-integrate ONLYOFFICE Document Server | Yes, experimental local spike |
+| Modify ONLYOFFICE source | No evidence in this repository |
+| White-label third-party Office UI as KHZ-owned technology | No |
 
-## ONLYOFFICE
+## ONLYOFFICE review requirement
 
-ONLYOFFICE Desktop Editors and Community Docs are published under AGPLv3. ONLYOFFICE also offers commercial Enterprise/Developer licenses. Their license FAQ states that using their source in another application under AGPL entails AGPL licensing obligations for the application; the commercial Developer route is the appropriate item to evaluate for proprietary embedded/white-label distribution.
+ONLYOFFICE Desktop Editors and Community/Document Server source are published under AGPLv3, and ONLYOFFICE also offers commercial editions/licenses for other integration and distribution models.
 
-KHZ's `OnlyOfficeDesktopEngine` only detects an already-installed desktop executable as a fallback. It does not bundle or modify ONLYOFFICE.
+The exact obligations depend on the exact product, source modifications, packaging, network deployment, distribution model, and branding used by KHZ. Those questions must be reviewed against the current upstream license and commercial terms before KHZ distributes an embedded configuration.
 
-## Collabora
+The existence of an open-source spike does not by itself establish that every future KHZ distribution model is cleared.
 
-Collabora publishes source under MPLv2/other component licenses, while executable/distribution and subscription terms can differ. The exact chosen Collabora product and distribution channel must be reviewed before bundling or branded redistribution.
+## Branding and provenance
 
-## Univer
+KHZ should not hide third-party authorship or imply ownership of the Office editor.
 
-Univer core is Apache-2.0. Univer Pro documentation describes a production license for advanced capabilities. A legal and technical feature map is required before relying on Pro functionality for import/export or institutional spreadsheet features.
+If ONLYOFFICE is shown or distributed as part of an approved integration, documentation should identify ONLYOFFICE as the document-editing layer and preserve applicable notices and trademarks.
 
-## ClosedXML and Open XML SDK
+If LibreOffice is used, the same principle applies.
 
-Both are MIT-licensed libraries. They are useful for deterministic file manipulation/inspection but are not Office-class interactive editors and therefore do not satisfy the Office engine requirement by themselves.
+The KHZ-owned product layer is the surrounding workspace: files, search, tasks, structured data, policy, audit/activity, backup/restore, repositories, terminal boundaries, and integrations.
 
-## Commercial license required for intended deployment
+## Production distribution gate
 
-For the **current selected LibreOffice external-process architecture**, no commercial LibreOffice license requirement was identified from the reviewed project licensing page. This is not a legal conclusion.
+Before shipping any embedded Office engine with KHZ, record and review:
 
-For a future **proprietary embedded/white-labeled ONLYOFFICE Developer** integration, a commercial license should be expected and reviewed.
+1. exact upstream product/edition and version;
+2. exact license text and commercial agreement, if any;
+3. whether binaries or source are redistributed;
+4. whether source is modified or linked;
+5. whether the integration is network/server based;
+6. required attribution/notices;
+7. trademark/branding treatment;
+8. source-offer or corresponding-source obligations, where applicable;
+9. update/security responsibility;
+10. a reproducible inventory in the KHZ SBOM.
+
+Until that review is complete, the local ONLYOFFICE path remains an integration spike rather than a declared shipping model.
