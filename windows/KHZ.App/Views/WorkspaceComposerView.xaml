@@ -59,7 +59,7 @@
                    Foreground="#777777"
                    Margin="0,0,0,10"/>
 
-        <WrapPanel Width="980" HorizontalAlignment="Left">
+        <WrapPanel HorizontalAlignment="Left">
             <Button Style="{StaticResource ComposerCard}"
                     Tag="files"
                     AutomationProperties.AutomationId="ComposerFilesButton"
@@ -214,7 +214,7 @@
                    Foreground="#777777"
                    Margin="0,16,0,10"/>
 
-        <WrapPanel Width="980" HorizontalAlignment="Left">
+        <WrapPanel HorizontalAlignment="Left">
             <Button Style="{StaticResource ComposerCard}"
                     Tag="documents"
                     AutomationProperties.AutomationId="ComposerDocumentsButton"
@@ -306,7 +306,7 @@
                    Foreground="#777777"
                    Margin="0,16,0,10"/>
 
-        <WrapPanel Width="980" HorizontalAlignment="Left">
+        <WrapPanel HorizontalAlignment="Left">
             <Button Style="{StaticResource ComposerUtilityCard}"
                     Tag="activity"
                     AutomationProperties.AutomationId="ComposerActivityButton"
