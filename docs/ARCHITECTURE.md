@@ -6,24 +6,24 @@ This document describes implemented code in this repository plus explicitly iden
 
 ## Host decision
 
-The current host is Python 3.11+ with Tk/ttk. This is not an ideological choice and it is not an attempt to make Tk the Office renderer. It was selected for this source package because the build environment could compile, test, and launch it without fabricating a Windows-only build. Office rendering/editing stays behind a replaceable mature-engine boundary.
-
-A future native Windows host can replace the UI shell without changing workspace metadata, audit semantics, task/action contracts, or Office adapter concepts.
+The Windows client is a .NET 9 WPF application under `windows/KHZ.App`. Python 3.11+ supplies deterministic workspace services, the original cross-platform host, model management, and the bounded workspace MCP server. Office rendering/editing remains behind a replaceable mature-engine boundary.
 
 ## Major boundaries
 
 ```text
-KHZ UI
+WPF / Python UI
   |
   +-- Workspace / filesystem services
   +-- SQLite metadata + structured Data
   +-- Search
   +-- Audit / versions / backup / restore
   +-- Git adapter
-  +-- Terminal executor
-  +-- Office adapter --------------------> external LibreOffice / alternative engine
+  +-- Terminal executor ----------------> Windows Job Object lifecycle containment
+  +-- Office adapter --------------------> external LibreOffice / authenticated ONLYOFFICE spike
   +-- Network policy
-  +-- AI policy -------------------------> optional IModelProvider (none configured)
+  +-- AI policy / model manager --------> optional llama.cpp loopback server
+                                            |
+                                            +-- bounded workspace MCP
 ```
 
 ## Workspace ownership
@@ -58,20 +58,19 @@ Office edits are made by an external mature process. Before launch, KHZ captures
 
 ## Office boundary
 
-`IOfficeEngine` is the replaceable interface. Implemented adapters:
+Python uses `IOfficeEngine`; WPF uses `IOfficeEngineAdapter`. Implemented paths include:
 
 - `LibreOfficeEngine` - selected when detected;
-- `OnlyOfficeDesktopEngine` - external-process fallback detection only.
+- `OnlyOfficeDesktopEngine` - external-process fallback detection.
+- `OnlyOfficeGatewayAdapter` - authenticated loopback request/navigation adapter for the experimental Document Server spike.
 
-Interactive editing is out-of-process. Deterministic LibreOffice conversion uses headless invocation. The acceptance spike uses UNO to open/edit/save/reopen real files.
-
-Embedding LibreOfficeKit or a licensed ONLYOFFICE Developer surface is a future integration choice, not silently simulated here.
+Deterministic LibreOffice conversion and the historical corpus use external/headless processes. The ONLYOFFICE spike uses a pinned container, enabled JWT, signed per-route capabilities, a separate browser session token, and a restricted WebView2 host. It remains a spike and is not bundled as an approved distribution.
 
 ## AI boundary
 
-AI defaults OFF. `AIPolicy.require_enabled()` fails closed before context release or action validation. `ContextManifest` is a typed boundary. Health-data release is denied by default. Model actions are allowlisted and bound to one workspace.
+AI defaults OFF. `AIPolicy.require_enabled()` still fails closed before typed context release or action validation, and health-data release is denied by default.
 
-The current repository has no configured provider and no model process. A future provider must implement `IModelProvider` and supply runtime-owned metadata rather than trusting model self-identification.
+The optional `khz` CLI manages external GGUF models for direct `llama.cpp` execution. Pull records source/license metadata and a SHA-256 manifest; serve verifies it, binds one ephemeral authenticated loopback session to one workspace, and exposes only list/read/search/propose MCP tools. The WPF Local Assistant blocks external origins. A model-created write proposal cannot modify a target until the user explicitly applies it through KHZ with a fresh hash check and version snapshot.
 
 ## Network policy
 
@@ -83,7 +82,7 @@ Read-only operations never call remotes. `fetch`, `pull`, and `push` require bot
 
 ## Terminal
 
-Terminal commands are not model text. `TerminalService.run` requires `authorized=True`, bounds timeout, captures stdout/stderr/exit code, and fixes the working directory to the workspace root. This is execution control, not a security sandbox.
+Terminal commands are not model text. Python `TerminalService.run` requires `authorized=True`, bounds timeout, captures stdout/stderr/exit code, and fixes the working directory to the workspace root. The WPF runner also blocks elevated execution and fails closed unless it can attach the spawned PowerShell process to a kill-on-close Windows Job Object. This is process-tree lifecycle containment, not an AppContainer or filesystem/network sandbox.
 
 ## Audit
 

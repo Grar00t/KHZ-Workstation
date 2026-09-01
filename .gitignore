@@ -26,3 +26,4 @@ htmlcov/
 # ONLYOFFICE spike runtime artifacts
 acceptance/reports/onlyoffice-callbacks.jsonl
 acceptance/roundtrip/OnlyOffice-*
+tools/office-spike/.runtime/

@@ -36,7 +36,8 @@ The current spike:
 - runs it on an internal Docker network;
 - exposes the editor API to the host through loopback;
 - disables plugins and metrics in the spike container;
-- explicitly runs with JWT disabled and labels that state `JWT_DISABLED_SPIKE_ONLY`.
+- enables JWT and separate KHZ browser-session authentication;
+- does not bundle the Document Server image or alter/white-label its source or UI.
 
 Therefore the spike must not be represented as a production-approved packaging or licensing model.
 

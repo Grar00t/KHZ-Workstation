@@ -45,6 +45,7 @@ The WPF application currently exposes implemented surfaces for:
 - Tasks
 - Repositories
 - Terminal
+- Local Assistant (optional llama.cpp runtime)
 - Activity
 - Security
 - Integrations
@@ -62,7 +63,7 @@ There are currently two distinct pieces of evidence in this repository, and they
 1. **LibreOffice acceptance baseline** — the original compatibility corpus and deterministic round-trip tests used an unmodified external LibreOffice process. This remains historical verification evidence.
 2. **ONLYOFFICE embedded spike** — the current Windows embedding direction includes a local ONLYOFFICE Document Server prototype behind a loopback gateway used by the WPF shell.
 
-The ONLYOFFICE spike is **not production-ready**. Its launcher explicitly marks JWT as disabled for the spike and binds the KHZ gateway to local/internal networking. It is an integration experiment, not a claim of a hardened deployment.
+The ONLYOFFICE spike is **not production-ready**. It now enables a fresh JWT secret on every launch, uses a separate browser-to-gateway token, accepts Document Server callbacks only from its exact container address, and publishes the runtime only on IPv4 loopback. The WPF client fails closed when no authenticated session is present. These are implemented prototype controls, not a production certification.
 
 See:
 
@@ -81,12 +82,31 @@ Current architectural goals:
 - local SQLite state and structured data
 - no mandatory AI
 - explicit capabilities for sensitive actions
-- bounded terminal execution
+- bounded terminal execution with Windows Job Object lifecycle containment
 - local read-only Git inspection by default
 - deterministic backup manifests and hashes
 - replaceable integrations instead of vendor lock-in
 
-`local-first` does **not** mean every third-party child process is magically sandboxed. OS-level network and process isolation still matter for hardened institutional deployment.
+`local-first` does **not** mean every third-party child process is sandboxed. Job Objects terminate contained process trees but do not provide AppContainer filesystem or network isolation. OS policy still matters for hardened institutional deployment.
+
+## Optional local models (no Ollama dependency)
+
+KHZ can use current `llama.cpp` tools directly. No model is included and nothing is downloaded until the user runs `khz pull`.
+
+```powershell
+# after installing llama-download and llama-server from llama.cpp on PATH
+khz catalog
+khz pull qwen
+khz pull phi
+khz pull llama --accept-license
+
+# "lama" is accepted as an alias for "llama"
+khz serve qwen --workspace C:\Work\MyWorkspace
+```
+
+`khz pull` records the upstream source, license metadata, size, and SHA-256 digest. `khz serve` re-verifies the model, binds `llama-server` to `127.0.0.1`, creates an ephemeral API key, and exposes only the KHZ workspace MCP tools: bounded list/read/search plus write proposals. The model has no shell tool and cannot apply its own proposal; review and application happen in the WPF Local Assistant surface.
+
+See [`docs/LOCAL-AI.md`](docs/LOCAL-AI.md).
 
 ## Verification status
 
@@ -100,8 +120,9 @@ Verification claims in KHZ are intentionally narrow.
 | LibreOffice compatibility corpus | VERIFIED/PARTIAL per individual fixture reports |
 | WPF Workspace Composer source/build | VERIFIED on its development branch; interactive UI proof still separate |
 | ONLYOFFICE local embedding spike | IMPLEMENTED AS A SPIKE; not a production security claim |
+| KHZ model manager and bounded workspace MCP | UNIT VERIFIED; real model/runtime smoke test pending |
 | Windows installer/MSI | UNVERIFIED |
-| Hardened process sandbox | NOT IMPLEMENTED as an OS-enforced sandbox |
+| Job Object process-tree lifecycle containment | IMPLEMENTED; AppContainer sandbox NOT IMPLEMENTED |
 
 `VERIFIED` never means certified, compliant, secure-by-default, or production-ready.
 
@@ -163,7 +184,7 @@ windows/KHZ.App/              WPF Windows application
 src/khz_workstation/          Python host and deterministic services
 tests/                        core/security regression tests
 scripts/                      run/build/acceptance utilities
-tools/office-spike/           ONLYOFFICE local embedding spike
+tools/office-spike/           Authenticated ONLYOFFICE local embedding spike
 acceptance/                   compatibility fixtures and evidence
 docs/                         architecture, licensing, deployment docs
 SBOM/                         software bill of materials

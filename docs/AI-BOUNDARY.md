@@ -2,48 +2,45 @@
 
 ## Baseline
 
-AI is not required for normal use. Default settings set AI, remote AI, and embeddings to OFF.
+AI is not required for normal use. Default settings keep AI, remote AI, and embeddings off. No model weights or llama.cpp binaries are bundled.
 
-No model weights are included. No provider is configured.
+The optional local path is user initiated:
 
-## Provider contract
+```text
+khz pull <llama|qwen|phi>
+khz serve <family> --workspace <path>
+```
 
-`IModelProvider` separates runtime metadata from model output. Model identity must come from provider/runtime configuration, file/hash metadata where applicable, and request metadata. Model self-claims are ignored.
+Pulling requires network access to the recorded upstream model source. Serving uses a verified local GGUF and loopback only.
 
-## Context release
+## Runtime identity
 
-`ContextManifest` carries:
+`ModelManager` owns the supported catalog and writes an atomic manifest containing source, license metadata, path, size, SHA-256, and installation time. `LocalAiServer` refuses to start a missing or changed model. Model identity comes from this runtime metadata, never model prose.
 
-- workspace ID;
-- artifact;
-- selection/range;
-- item count;
-- classification;
-- attachments;
-- request ID.
+Each server session is bound to one stable workspace ID and one canonical workspace root. It uses an ephemeral API key, an exact IPv4 loopback endpoint, and Windows Job Object process-tree lifecycle containment. The session file is stored in the user's local KHZ runtime directory, not in the workspace.
 
-`AIPolicy.release_context` fails when AI is OFF and denies `HEALTH_DATA` by default.
+## Context and tools
 
-## Actions
+The llama.cpp built-in agent and host tools are disabled. KHZ supplies one stdio MCP server with four tools:
 
-Model output is data. Supported action proposals are allowlisted:
+- bounded workspace directory listing;
+- bounded UTF-8 file reads;
+- bounded text search;
+- creation of a pending text-write proposal.
 
-- SetCellValue
-- SetFormula
-- SetNumberFormat
-- InsertChart
-- ReplaceParagraph
-- CreateSlide
-- RenameFile
+Direct access to `.khz`, `.git`, dependency/build metadata, absolute paths, traversal paths, and symlink/reparse escapes is denied. There is no shell, Git write, remote network, arbitrary file write, approval, or verification tool.
 
-Validation rejects unknown fields, unsupported actions, workspace mismatches, oversized targets/arguments, and malformed objects.
+## Proposal boundary
 
-The current code does not provide an action executor wired to a model provider. There is therefore no path from model prose to shell execution.
+`workspace_propose_write_text` never modifies the requested target. It captures the observed target SHA-256 and stores a `PENDING` proposal under `.khz/ai-proposals`.
 
-## Direct access
+Only the native WPF proposal service can apply or reject it. Application requires an explicit user confirmation, re-reads the proposal, verifies workspace identity and path boundaries, compares the current target digest, stores a version snapshot, writes a flushed sibling temporary file, and atomically replaces the target. A stale proposal fails closed.
 
-- Direct model shell access: NO
-- Direct model filesystem access: NO
-- Direct model network access: NO
-- Model approval authority: NO
-- Model verification authority: NO
+- Model approval authority: **NO**
+- Model shell authority: **NO**
+- Model access outside the active workspace: **NO**
+- Automatic cloud fallback: **NO**
+
+## Existing typed action policy
+
+The earlier `AIPolicy` / `ContextManifest` boundary remains available for structured application actions. It fails when AI is off, denies health-data release by default, and rejects unknown or workspace-mismatched actions. It does not grant the local model an executor.

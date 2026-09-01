@@ -121,6 +121,10 @@ public partial class MainWindow
                 Terminal_Click(this, routed);
                 break;
 
+            case "assistant":
+                Assistant_Click(this, routed);
+                break;
+
             case "backup":
                 BackupRestore_Click(this, routed);
                 break;
