@@ -14,7 +14,7 @@ internal sealed class WorkspaceService
     internal const string MetadataDatabaseFileName = "metadata.db";
 
     private const int ManifestSchemaVersion = 1;
-    private const int MetadataSchemaVersion = 1;
+    private const int MetadataSchemaVersion = 2;
 
     private static readonly JsonSerializerOptions JsonOptions =
         new()
@@ -324,6 +324,20 @@ internal sealed class WorkspaceService
             connection,
             "PRAGMA busy_timeout=5000;");
 
+        var existingMetadataVersion =
+            Convert.ToInt32(
+                ExecuteScalar(
+                    connection,
+                    "PRAGMA user_version;"),
+                CultureInfo.InvariantCulture);
+
+        if (existingMetadataVersion
+            > MetadataSchemaVersion)
+        {
+            throw new InvalidDataException(
+                $"Workspace metadata schema {existingMetadataVersion} is newer than supported schema {MetadataSchemaVersion}.");
+        }
+
         using var transaction =
             connection.BeginTransaction();
 
@@ -344,6 +358,36 @@ internal sealed class WorkspaceService
                 """;
 
             schema.ExecuteNonQuery();
+        }
+
+        using (var dataCatalog =
+               connection.CreateCommand())
+        {
+            dataCatalog.Transaction =
+                transaction;
+
+            dataCatalog.CommandText =
+                """
+                CREATE TABLE IF NOT EXISTS data_catalog
+                (
+                    table_id     TEXT PRIMARY KEY NOT NULL,
+                    workspace_id TEXT NOT NULL,
+                    name         TEXT NOT NULL
+                                 CHECK(length(trim(name)) BETWEEN 1 AND 160),
+                    sql_name     TEXT NOT NULL UNIQUE
+                                 CHECK(length(trim(sql_name)) BETWEEN 1 AND 80),
+                    schema_json  TEXT NOT NULL,
+                    created_utc  TEXT NOT NULL,
+
+                    UNIQUE(workspace_id, name),
+
+                    FOREIGN KEY(workspace_id)
+                        REFERENCES workspace_identity(workspace_id)
+                        ON DELETE CASCADE
+                );
+                """;
+
+            dataCatalog.ExecuteNonQuery();
         }
 
         using (var read =
