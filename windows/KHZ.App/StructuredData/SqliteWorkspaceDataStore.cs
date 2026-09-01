@@ -285,6 +285,37 @@ internal sealed class SqliteWorkspaceDataStore
         return result;
     }
 
+    public long CountRows(
+        string tableId)
+    {
+        var normalizedTableId =
+            NormalizeTableId(
+                tableId);
+
+        using var connection =
+            OpenConnection(
+                readOnly: true);
+
+        var table =
+            GetTable(
+                connection,
+                transaction: null,
+                normalizedTableId);
+
+        using var command =
+            connection.CreateCommand();
+
+        command.CommandText =
+            $"""
+            SELECT COUNT(*)
+            FROM {QuoteIdentifier(table.SqlName)};
+            """;
+
+        return Convert.ToInt64(
+            command.ExecuteScalar(),
+            CultureInfo.InvariantCulture);
+    }
+
     public string AddRow(
         string tableId,
         IReadOnlyDictionary<string, object?> values)

@@ -15,6 +15,9 @@ internal interface IWorkspaceDataStore
 
     IReadOnlyList<DataTableInfo> ListTables();
 
+    long CountRows(
+        string tableId);
+
     string AddRow(
         string tableId,
         IReadOnlyDictionary<string, object?> values);
