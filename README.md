@@ -1,42 +1,127 @@
-# KHZ WORKSTATION
+# KHZ Workstation
 
-KHZ Workstation is a local-first professional workstation shell for filesystem workspaces, Office-family documents, structured local data, search, Git inspection, terminal execution, backup/restore, version history, audit metadata, deterministic tasks, and an optional AI boundary.
+**Your work, on your computer.**
 
-The workspace is the product. AI is optional and is **OFF by default**.
+KHZ Workstation is an open-source, local-first Windows workspace for real files, Office documents, structured data, tasks, repositories, terminal workflows, search, audit history, and backup/restore.
 
-## Evidence status for this source package
+The workspace is the product. AI is optional and **OFF by default**.
 
-| Area | Status | Evidence |
-|---|---|---|
-| Python host compile | VERIFIED | `python -m compileall -q src tests scripts` on the build environment |
-| Core unit/security tests | VERIFIED | 22/22 passed across `tests/test_core.py` and `tests/test_workflows.py` |
-| UI launch smoke | VERIFIED | Tk UI launched under Xvfb and exited normally; `acceptance/reports/ui-smoke.txt` |
-| Real UI captures | VERIFIED on Linux/Xvfb | actual KHZ and LibreOffice screenshots in `acceptance/ui-evidence/`; not mockups |
-| `NO_AI_BASELINE` | VERIFIED | `acceptance/reports/no-ai-baseline.json` |
-| LibreOffice DOCX/XLSX/PPTX open-edit-save-reopen | VERIFIED on Linux test environment | `acceptance/reports/office-roundtrip.json` |
-| XLSX structural round-trip | VERIFIED for tested structures | `acceptance/reports/compatibility-structure.json` |
-| DOCX structural round-trip | PARTIAL | comment and tracked insertion preserved; synthetic TOC field was not preserved by the tested round-trip |
-| PPTX structural round-trip | PARTIAL | chart, master, transitions, and speaker notes preserved; object animation is not in the current fixture |
-| Formula matrix | PARTIAL | 59/64 tested rows calculated; see `acceptance/reports/formula-compatibility.json` |
-| Healthcare zero-egress observation | VERIFIED on Linux process-observation test only | no non-loopback connections observed; `acceptance/reports/healthcare-zero-egress.json` |
-| Windows 11 runtime | UNVERIFIED | this build environment is Linux, not Windows 11 |
-| Windows installer/executable packaging | UNVERIFIED | source repository is delivered; no Windows binary was fabricated |
-| PDF in-app editor | UNSUPPORTED | local open/view is delegated to registered local software / Office engine; no fake redaction/editor is presented |
-| AI provider | DISABLED | no model is bundled or configured |
+> KHZ does not try to rebuild Word, Excel, or PowerPoint from scratch. Office-class editing is treated as a replaceable engine behind the workspace.
 
-`VERIFIED` never means certified, compliant, or production-ready.
+## What makes KHZ different
 
-## Host requirements
+Most productivity tools create a new universe that your work must be imported into.
 
-Primary target: Windows 11 x64. Windows 10 x64 is intended where Python and the selected Office engine support it.
+KHZ starts from the opposite direction:
 
-Source runtime:
+```text
+Your real workspace folder
+|
++-- Contract.docx
++-- Budget.xlsx
++-- Board.pptx
++-- Evidence.pdf
++-- source repository
++-- ordinary folders/files
+|
++-- KHZ metadata in .khz/
+    +-- workspace identity
+    +-- structured local data
+    +-- audit/activity
+    +-- versions
+    +-- backup state
+```
 
-- Python 3.11 or newer from python.org (Tk included in the standard Windows installer).
-- Git is optional for repository features.
-- LibreOffice is the selected Office adapter for this build and is **not bundled**.
+Files remain ordinary files. The workspace remains usable outside KHZ.
 
-### Run on Windows from source
+## Current Windows surfaces
+
+The WPF application currently exposes implemented surfaces for:
+
+- Workspace / Files
+- Documents / Sheets / Slides / PDF
+- Structured Data
+- Search
+- Tasks
+- Repositories
+- Terminal
+- Activity
+- Security
+- Integrations
+- Settings
+- Backup & Restore
+
+A Workspace Composer is under active development to bring those capabilities together into one project surface instead of a collection of disconnected tools.
+
+## Office engine status
+
+KHZ keeps the Office layer replaceable.
+
+There are currently two distinct pieces of evidence in this repository, and they should not be confused:
+
+1. **LibreOffice acceptance baseline** — the original compatibility corpus and deterministic round-trip tests used an unmodified external LibreOffice process. This remains historical verification evidence.
+2. **ONLYOFFICE embedded spike** — the current Windows embedding direction includes a local ONLYOFFICE Document Server prototype behind a loopback gateway used by the WPF shell.
+
+The ONLYOFFICE spike is **not production-ready**. Its launcher explicitly marks JWT as disabled for the spike and binds the KHZ gateway to local/internal networking. It is an integration experiment, not a claim of a hardened deployment.
+
+See:
+
+- [`docs/ADR-002-OFFICE-INTEGRATION-DIRECTION.md`](docs/ADR-002-OFFICE-INTEGRATION-DIRECTION.md)
+- [`tools/office-spike/start-spike.sh`](tools/office-spike/start-spike.sh)
+- [`docs/ADR-001-OFFICE-ENGINE.md`](docs/ADR-001-OFFICE-ENGINE.md) — historical LibreOffice baseline decision
+- [`docs/OFFICE-LICENSING.md`](docs/OFFICE-LICENSING.md) — licensing review baseline; re-review required before distribution of an embedded Office engine
+
+## Local-first boundary
+
+KHZ is designed so normal workspace use does not depend on an AI provider or mandatory cloud service.
+
+Current architectural goals:
+
+- real filesystem workspaces
+- local SQLite state and structured data
+- no mandatory AI
+- explicit capabilities for sensitive actions
+- bounded terminal execution
+- local read-only Git inspection by default
+- deterministic backup manifests and hashes
+- replaceable integrations instead of vendor lock-in
+
+`local-first` does **not** mean every third-party child process is magically sandboxed. OS-level network and process isolation still matter for hardened institutional deployment.
+
+## Verification status
+
+Verification claims in KHZ are intentionally narrow.
+
+| Area | Current evidence |
+|---|---|
+| Windows .NET 9 restore/build | VERIFIED in GitHub Actions |
+| Python core tests | VERIFIED on Windows and Ubuntu, Python 3.11/3.13 |
+| `NO_AI_BASELINE` | VERIFIED in CI |
+| LibreOffice compatibility corpus | VERIFIED/PARTIAL per individual fixture reports |
+| WPF Workspace Composer source/build | VERIFIED on its development branch; interactive UI proof still separate |
+| ONLYOFFICE local embedding spike | IMPLEMENTED AS A SPIKE; not a production security claim |
+| Windows installer/MSI | UNVERIFIED |
+| Hardened process sandbox | NOT IMPLEMENTED as an OS-enforced sandbox |
+
+`VERIFIED` never means certified, compliant, secure-by-default, or production-ready.
+
+## Run the Windows application
+
+Requirements:
+
+- Windows 10/11 x64
+- .NET 9 SDK for source builds
+- Microsoft Edge WebView2 Runtime
+
+```powershell
+cd windows
+dotnet restore .\KHZ.Workstation.sln
+dotnet build .\KHZ.Workstation.sln -c Release
+```
+
+The Office integration has separate runtime requirements depending on the engine/spike being tested. Do not treat the ONLYOFFICE spike launcher as a production deployment recipe.
+
+## Run the Python host / acceptance baseline
 
 ```powershell
 py -3 -m venv .venv
@@ -45,23 +130,7 @@ py -3 -m venv .venv
 .\scripts\run.ps1
 ```
 
-Or:
-
-```cmd
-scripts\run.cmd
-```
-
-Open a workspace directly:
-
-```powershell
-.\scripts\run.ps1 C:\Work\ExampleWorkspace
-```
-
-If the folder does not already contain `.khz/workspace.json`, create it through **Open Workspace** in the UI.
-
-## Verify source
-
-Linux/macOS shell:
+Verification:
 
 ```bash
 export PYTHONPATH="$PWD/src"
@@ -70,162 +139,48 @@ python -m unittest discover -s tests -v
 python scripts/no_ai_baseline.py
 ```
 
-Windows PowerShell:
+## Demo path
 
-```powershell
-.\scripts\build.ps1
-$env:PYTHONPATH = "$PWD\src"
-python .\scripts\no_ai_baseline.py
-```
-
-Office corpus generation uses pinned development packages in `requirements-dev.txt`. Deterministic cross-Office workflows use the separately pinned optional packages in `requirements-automation.txt`. The generated corpus is already included under `acceptance/corpus/`.
-
-## Office engine
-
-Selected adapter: **LibreOffice**, running as an unmodified external local desktop process for interactive editing and through deterministic headless/UNO automation for acceptance tests.
-
-Tested engine in this package:
+The launch demo is intentionally simple:
 
 ```text
-LibreOffice 25.2.3.2 520(Build:2)
+Open KHZ
+  -> enter a real workspace
+  -> open Budget.xlsx through the Office layer
+  -> save the real file
+  -> return to Files / Structured Data / Activity
+  -> create a workspace backup
 ```
 
-Test platform:
+The point is not "another Office wrapper". The point is that the document editor is one replaceable component inside a local-first workstation that owns the surrounding workflow.
 
-```text
-Linux (build environment)
-```
-
-LibreOffice is detected through `PATH` and the standard Windows Program Files locations. If it is absent, KHZ still launches and reports the missing engine instead of drawing a nonfunctional fake editor.
-
-See:
-
-- `docs/ADR-001-OFFICE-ENGINE.md`
-- `docs/OFFICE-COMPATIBILITY.md`
-- `docs/OFFICE-LICENSING.md`
-
-## Work surfaces
-
-Implemented host surfaces:
-
-- Home
-- Files
-- Documents
-- Sheets
-- Slides
-- PDF
-- Data
-- Search
-- Activity
-- Repositories
-- Terminal
-- Tasks
-- Assistant
-- Settings
-
-The Documents, Sheets, and Slides surfaces manage real workspace files, create real OOXML files from local starter templates, preserve a pre-edit version, and open the file in the detected mature Office engine.
-
-Deterministic no-AI workflows currently implemented are Sheet range → DOCX table, DOCX table → XLSX, DOCX outline → PPTX draft, and Office document → PDF export. These are typed local operations; they are not routed through an LLM.
-
-## No-AI baseline
-
-`AI_ENABLED=false` is the normal default. The acceptance scenario verifies workspace creation, file operations, local Data, local search, read-only Git detection, explicit terminal execution, backup, restore, audit integrity, and the AI kill switch. Office round-trip evidence is generated independently with no AI component.
-
-When AI is OFF, the host does not instantiate a model provider or build/release AI context.
-
-## Healthcare Hardened profile
-
-This is a security profile, **not a certification**. Enabling it forces:
-
-- AI OFF
-- remote AI OFF
-- embeddings OFF
-- telemetry OFF
-- updates OFF
-- Git network OFF
-- plugins OFF
-- macros OFF at KHZ policy level
-- network policy `LOOPBACK_ONLY`
-- Terminal hidden/disabled in the UI
-
-The Healthcare profile also disables Terminal and uses an inactivity timer to request the native Windows session lock when running on Windows; this Windows lock path is **UNVERIFIED** in the Linux build environment. No weaker KHZ password fallback is implemented.
-
-The in-process network policy cannot prove or centrally enforce the behavior of every third-party process. Windows Firewall or equivalent OS controls remain required for institutional deployment. See `docs/HEALTHCARE-DEPLOYMENT.md` and `docs/NETWORK-POLICY.md`.
-
-## Files and versions
-
-Workspace originals stay as ordinary filesystem files. KHZ metadata lives in `.khz/`:
-
-```text
-.khz/
-  workspace.json
-  metadata.db
-  audit.jsonl
-  versions/
-  trash/
-```
-
-Direct writes use temp-file + fsync + atomic replacement where the filesystem supports it. Office launches create a recoverable pre-edit snapshot. The Files surface exposes folders, rename, copy, move, Open With, properties/hash, reveal, and Safe Delete to workspace trash rather than truncating/deleting in place.
-
-## Structured Data
-
-The Data surface uses local SQLite with transactions, foreign-key enforcement, WAL mode, stable IDs, typed columns (`TEXT`, `INTEGER`, `REAL`, `BLOB`), workspace ownership, validated filter/sort queries, and deterministic CSV/XLSX import/export. It is separate from spreadsheets and does not claim `.accdb` compatibility.
-
-## Git and Terminal
-
-Git inspection is local/read-only by default: repository detection, branch/status, diff, and history. Network operations are implemented behind explicit authorization and policy checks but are not exposed as automatic background behavior.
-
-Terminal execution requires a user approval dialog, captures stdout/stderr/exit code, runs in the workspace root, and is disabled by the Healthcare Hardened UI policy.
-
-## Backup and restore
-
-Backups are ZIP archives with `KHZ-BACKUP-MANIFEST.json` containing workspace identity and per-file SHA-256 hashes. Publication is staged and atomically replaced only after validation. Restore extracts into a staging directory, revalidates hashes, preserves an existing destination, then swaps the staged result into place.
-
-See `docs/BACKUP-RESTORE.md`.
-
-## AI boundary
-
-No model weights are shipped. No provider is enabled by default. The code includes:
-
-- `IModelProvider`
-- runtime-owned model metadata contract
-- `ContextManifest`
-- PHI-to-AI deny-by-default check
-- typed action allowlist
-- workspace match validation
-- argument bounds
-- explicit rejection of shell actions from model output
-
-There is no direct model filesystem, shell, or network capability.
+See [`docs/LAUNCH-DEMO.md`](docs/LAUNCH-DEMO.md).
 
 ## Repository structure
 
 ```text
-src/khz_workstation/        host application and services
-tests/                      core/security regression tests
-scripts/                    run/build/acceptance utilities
-acceptance/corpus/          synthetic Office/PDF fixtures
-acceptance/reports/         machine-readable evidence
-docs/                       architecture, licensing, security, deployment/localization docs
-SBOM/                       software bill of materials
-LICENSES/                   third-party license texts/pointers
+windows/KHZ.App/              WPF Windows application
+src/khz_workstation/          Python host and deterministic services
+tests/                        core/security regression tests
+scripts/                      run/build/acceptance utilities
+tools/office-spike/           ONLYOFFICE local embedding spike
+acceptance/                   compatibility fixtures and evidence
+docs/                         architecture, licensing, deployment docs
+SBOM/                         software bill of materials
+LICENSES/                     third-party licensing material
 ```
 
-## Known gaps
+## Project principles
 
-This package does **not** claim the following are complete:
+1. Real files stay real files.
+2. The workspace must remain useful without AI.
+3. Integrations must be replaceable.
+4. Sensitive execution should be explicit and observable.
+5. Claims require evidence.
+6. Open source should not become another form of lock-in.
 
-- embedded Office editing inside the KHZ process;
-- Windows 11 runtime verification;
-- Microsoft VBA execution;
-- Power Query or Power Pivot;
-- PowerPoint object animation editing;
-- secure PDF redaction;
-- full PDF annotation/form editing;
-- centralized egress enforcement over arbitrary third-party processes;
-- Windows Job Object execution isolation;
-- Windows Credential Manager/DPAPI integration;
-- packaged Windows `.exe`/MSI;
-- compliance certification.
+## License
 
-See `docs/KNOWN-LIMITATIONS.md` for the full list.
+KHZ Workstation source is licensed under Apache-2.0 unless a file states otherwise. Third-party components and Office engines retain their own licenses, notices, and trademarks.
+
+**KHZ Workstation is independent software and is not affiliated with Microsoft, ONLYOFFICE, LibreOffice, Notion, or other referenced vendors unless an explicit agreement says otherwise.**
