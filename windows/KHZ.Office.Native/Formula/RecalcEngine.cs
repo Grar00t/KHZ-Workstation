@@ -58,13 +58,15 @@ namespace KHZ.Office.Native.Formula
 	/// <summary>
 	/// Orders and evaluates every formula in a workbook.
 	/// <para>
-	/// Evaluation order comes from a real dependency graph resolved with Kahn's
-	/// algorithm, not from sheet or cell order. Any cell that cannot be ordered is
-	/// part of a cycle and is reported as such instead of being assigned a value.
+	/// Evaluation order comes from a dependency graph resolved with Kahn's algorithm,
+	/// not from sheet or cell order. Any cell that cannot be ordered is part of a
+	/// cycle and is reported as such instead of being assigned a value.
 	/// </para>
 	/// </summary>
 	public sealed class RecalcEngine : IEvaluationContext
 	{
+		private const int MaxSamples = 40;
+
 		private readonly WorkbookModel _workbook;
 		private readonly DateTime _clock;
 		private readonly Dictionary<string, WorkbookSheet> _sheetsByName;
@@ -174,7 +176,7 @@ namespace KHZ.Office.Native.Formula
 						cell.ComputedValue = FormulaValue.FromError(FormulaErrors.Name);
 						result.ParseFailureCount++;
 
-						if (result.ParseFailures.Count < 40)
+						if (result.ParseFailures.Count < MaxSamples)
 						{
 							result.ParseFailures.Add(
 								sheet.Name + "!" + cell.Reference.ToA1() +
@@ -184,7 +186,7 @@ namespace KHZ.Office.Native.Formula
 				}
 			}
 
-			// 3. Build edges. Only formula cells are graph nodes; a dependency on a
+			// 3. Build edges. Only formula cells are graph nodes: a dependency on a
 			//    constant or an empty cell needs no ordering.
 			Dictionary<CellKey, List<CellKey>> dependents = new Dictionary<CellKey, List<CellKey>>();
 			Dictionary<CellKey, int> indegree = new Dictionary<CellKey, int>();
@@ -192,4 +194,218 @@ namespace KHZ.Office.Native.Formula
 			for (int index = 0; index < nodes.Count; index++)
 			{
 				indegree[nodes[index]] = 0;
-	
+			}
+
+			List<CellKey> buffer = new List<CellKey>();
+			for (int index = 0; index < nodes.Count; index++)
+			{
+				CellKey key = nodes[index];
+				WorkbookCell cell = cellsByKey[key];
+				if (cell.Ast == null)
+				{
+					continue;
+				}
+
+				buffer.Clear();
+				CollectDependencies(cell.Ast, key.Sheet, buffer);
+
+				HashSet<CellKey> seen = new HashSet<CellKey>();
+				for (int position = 0; position < buffer.Count; position++)
+				{
+					CellKey dependency = buffer[position];
+					if (!cellsByKey.ContainsKey(dependency))
+					{
+						continue;
+					}
+
+					if (dependency.Equals(key) || !seen.Add(dependency))
+					{
+						continue;
+					}
+
+					List<CellKey> list;
+					if (!dependents.TryGetValue(dependency, out list))
+					{
+						list = new List<CellKey>();
+						dependents[dependency] = list;
+					}
+
+					list.Add(key);
+					indegree[key] = indegree[key] + 1;
+				}
+			}
+
+			// 4. Topological order.
+			Queue<CellKey> ready = new Queue<CellKey>();
+			for (int index = 0; index < nodes.Count; index++)
+			{
+				if (indegree[nodes[index]] == 0)
+				{
+					ready.Enqueue(nodes[index]);
+				}
+			}
+
+			List<CellKey> order = new List<CellKey>(nodes.Count);
+			while (ready.Count > 0)
+			{
+				CellKey key = ready.Dequeue();
+				order.Add(key);
+
+				List<CellKey> list;
+				if (!dependents.TryGetValue(key, out list))
+				{
+					continue;
+				}
+
+				for (int position = 0; position < list.Count; position++)
+				{
+					CellKey dependent = list[position];
+					indegree[dependent] = indegree[dependent] - 1;
+					if (indegree[dependent] == 0)
+					{
+						ready.Enqueue(dependent);
+					}
+				}
+			}
+
+			// 5. Evaluate in dependency order.
+			Evaluator evaluator = new Evaluator(this);
+			for (int index = 0; index < order.Count; index++)
+			{
+				CellKey key = order[index];
+				WorkbookCell cell = cellsByKey[key];
+				if (cell.Ast == null)
+				{
+					continue;
+				}
+
+				_currentSheet = key.Sheet;
+				try
+				{
+					cell.ComputedValue = evaluator.Evaluate(cell.Ast).Scalar();
+				}
+				catch (Exception)
+				{
+					cell.ComputedValue = FormulaValue.FromError(FormulaErrors.Value);
+				}
+
+				result.EvaluatedCount++;
+			}
+
+			// 6. Anything left unordered is in a cycle. Report it; never invent a value.
+			if (order.Count < nodes.Count)
+			{
+				HashSet<CellKey> ordered = new HashSet<CellKey>(order);
+				for (int index = 0; index < nodes.Count; index++)
+				{
+					CellKey key = nodes[index];
+					if (ordered.Contains(key))
+					{
+						continue;
+					}
+
+					WorkbookCell cell = cellsByKey[key];
+					if (cell.Ast == null)
+					{
+						continue;
+					}
+
+					cell.ComputedValue = FormulaValue.FromError(FormulaErrors.Cycle);
+					result.CycleCount++;
+
+					if (result.Cycles.Count < MaxSamples)
+					{
+						result.Cycles.Add(key.Sheet + "!" + key.Cell.ToA1());
+					}
+				}
+			}
+
+			return result;
+		}
+
+		/// <summary>
+		/// Walks a formula tree and appends every cell it reads. Ranges are expanded,
+		/// but a range larger than the evaluator's own limit is skipped rather than
+		/// materialised, so a stray whole-column reference cannot exhaust memory here.
+		/// </summary>
+		private static void CollectDependencies(
+			FormulaNode node,
+			string currentSheet,
+			List<CellKey> buffer)
+		{
+			if (node == null)
+			{
+				return;
+			}
+
+			ReferenceNode reference = node as ReferenceNode;
+			if (reference != null)
+			{
+				if (reference.Cell.IsValid)
+				{
+					buffer.Add(new CellKey(reference.Sheet ?? currentSheet, reference.Cell));
+				}
+
+				return;
+			}
+
+			RangeNode range = node as RangeNode;
+			if (range != null)
+			{
+				if (!range.From.IsValid || !range.To.IsValid)
+				{
+					return;
+				}
+
+				int rows = range.To.Row - range.From.Row + 1;
+				int columns = range.To.Column - range.From.Column + 1;
+				if (rows <= 0 || columns <= 0)
+				{
+					return;
+				}
+
+				if ((long)rows * columns > Evaluator.MaxRangeCells)
+				{
+					return;
+				}
+
+				string sheet = range.Sheet ?? currentSheet;
+				for (int row = 0; row < rows; row++)
+				{
+					for (int column = 0; column < columns; column++)
+					{
+						buffer.Add(new CellKey(
+							sheet,
+							new CellRef(range.From.Row + row, range.From.Column + column)));
+					}
+				}
+
+				return;
+			}
+
+			UnaryNode unary = node as UnaryNode;
+			if (unary != null)
+			{
+				CollectDependencies(unary.Operand, currentSheet, buffer);
+				return;
+			}
+
+			BinaryNode binary = node as BinaryNode;
+			if (binary != null)
+			{
+				CollectDependencies(binary.Left, currentSheet, buffer);
+				CollectDependencies(binary.Right, currentSheet, buffer);
+				return;
+			}
+
+			FunctionNode function = node as FunctionNode;
+			if (function != null)
+			{
+				for (int index = 0; index < function.Arguments.Count; index++)
+				{
+					CollectDependencies(function.Arguments[index], currentSheet, buffer);
+				}
+			}
+		}
+	}
+}
