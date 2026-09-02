@@ -38,31 +38,57 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      # The zero-dependency choice is part of the design. Enforce it here so it
-      # cannot decay into a preference that a future commit quietly drops.
-      - name: Assert the engine declares no third-party dependencies
+      # Zero third-party dependencies is a design constraint of this engine, so it
+      # is enforced rather than trusted.
+      #
+      # This inspects XML elements, not raw text. An earlier version substring
+      # matched 'PackageReference' and failed on the csproj comment that documents
+      # the absence of any PackageReference -- a gate that reads prose cannot tell
+      # a declaration from a sentence about the lack of one. local-name() also
+      # keeps this working if a default xmlns is ever added.
+      - name: Assert the spike projects declare no third-party dependencies
         shell: pwsh
         run: |
-          $csproj = 'windows/KHZ.Office.Native/KHZ.Office.Native.csproj'
-          if ((Get-Content -Path $csproj -Raw) -match 'PackageReference') {
-            Write-Host 'FAIL: KHZ.Office.Native declares a PackageReference.'
-            Write-Host 'Zero third-party dependencies is a design constraint of this engine, not a preference.'
+          $projects = @(
+            'windows/KHZ.Office.Native/KHZ.Office.Native.csproj',
+            'windows/KHZ.Office.Spike/KHZ.Office.Spike.csproj'
+          )
+          $failed = $false
+          foreach ($project in $projects) {
+            $xml = [xml](Get-Content -Path $project -Raw)
+            $refs = $xml.SelectNodes("//*[local-name()='PackageReference']")
+            if ($refs.Count -gt 0) {
+              foreach ($node in $refs) {
+                Write-Host ("FAIL: " + $project + " declares PackageReference '" + $node.GetAttribute('Include') + "'.")
+              }
+              $failed = $true
+            }
+            else {
+              Write-Host ("OK: " + $project + " declares no PackageReference.")
+            }
+          }
+          if ($failed) {
+            Write-Host 'The engine is built on the base class library only. Adding a dependency is a design change, not a build detail.'
             exit 1
           }
-          Write-Host 'OK: no PackageReference in KHZ.Office.Native.'
 
-      # The application build is already verified working. This branch must not
-      # be able to break it, and that is checkable rather than promised.
+      # The application build is already verified working. This branch must not be
+      # able to break it, and that is checkable rather than promised.
       - name: Assert the application build is untouched
         shell: pwsh
         run: |
-          $app = Get-Content -Path 'windows/KHZ.App/KHZ.App.csproj' -Raw
-          if ($app -match 'KHZ\.Office\.(Native|Spike)') {
-            Write-Host 'FAIL: KHZ.App references a spike project.'
-            exit 1
+          $appProject = 'windows/KHZ.App/KHZ.App.csproj'
+          $xml = [xml](Get-Content -Path $appProject -Raw)
+          foreach ($node in $xml.SelectNodes("//*[local-name()='ProjectReference']")) {
+            $include = $node.GetAttribute('Include')
+            if ($include -match 'KHZ\.Office\.(Native|Spike)') {
+              Write-Host ("FAIL: " + $appProject + " references '" + $include + "'.")
+              exit 1
+            }
           }
-          $sln = Get-Content -Path 'windows/KHZ.Workstation.sln' -Raw
-          if ($sln -match 'KHZ\.Office\.(Native|Spike)') {
+          # A .sln is not XML, so this one stays a text match.
+          $solution = Get-Content -Path 'windows/KHZ.Workstation.sln' -Raw
+          if ($solution -match 'KHZ\.Office\.(Native|Spike)') {
             Write-Host 'FAIL: a spike project was added to KHZ.Workstation.sln, which changes the existing CI build.'
             exit 1
           }
