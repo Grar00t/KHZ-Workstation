@@ -2,15 +2,22 @@
 
 ## Baseline
 
-KHZ Workstation remains fully usable without AI. Local AI is disabled at process start and must be enabled explicitly for the current application session. The enable state is not persisted.
+AI is not required for normal use. Default settings keep AI, remote AI, and embeddings off. Local AI is disabled at process start and must be enabled explicitly for the current application session. No model weights or llama.cpp binaries are bundled.
 
-KHZ does not download model weights. A user supplies a local `llama-server.exe`, a local GGUF model, and optionally a local LoRA adapter or chat-template file.
+The optional local path is user initiated:
+
+```text
+khz pull <llama|qwen|phi>
+khz serve <family> --workspace <path>
+```
+
+Pulling requires network access to the recorded upstream model source. Serving uses a verified local GGUF and loopback only. KHZ does not bundle or silently download model weights: a user supplies a local `llama-server.exe`, a local GGUF model, and optionally a local LoRA adapter or chat-template file.
 
 ## Local runtime
 
-The native WPF host can launch `llama-server.exe` as a child process bound to a dynamically selected `127.0.0.1` port. KHZ starts it with offline mode, waits on the local health endpoint, keeps the model process resident between requests, captures only bounded runtime logs, and terminates the process tree when the local-AI host is stopped.
+`ModelManager` owns the supported catalog and writes an atomic manifest containing source, license metadata, path, size, SHA-256, and installation time. `LocalAiServer` refuses to start a missing or changed model. Model identity comes from this runtime metadata, never model prose.
 
-Model identity displayed in the UI comes from KHZ configuration. Model prose is never used as evidence of model identity. This avoids treating a model saying "DeepSeek", "OLMo", or any other name as runtime metadata.
+The native WPF host can launch `llama-server.exe` as a child process bound to a dynamically selected `127.0.0.1` port. Each server session is bound to one stable workspace ID and one canonical workspace root. KHZ starts it with offline mode, waits on the local health endpoint, keeps the model process resident between requests, captures only bounded runtime logs, and terminates the process tree when the local-AI host is stopped. It uses an ephemeral API key, an exact IPv4 loopback endpoint, and Windows Job Object process-tree lifecycle containment. The session file is stored in the user's local KHZ runtime directory, not in the workspace.
 
 ## Reasoning visibility
 
@@ -29,9 +36,9 @@ Conversations are scoped to one context:
 
 Changing the active workspace/folder changes the visible conversation set. The raw folder path is not used as a conversation primary key. Long conversations are bounded before inference with a conservative character budget so history cannot grow without limit merely because it is stored locally.
 
-## Tools
+## Context and tools
 
-The local model can request bounded tools when tools are enabled:
+The local model can request bounded in-app tools when tools are enabled:
 
 - `list_directory`
 - `read_file`
@@ -40,28 +47,34 @@ The local model can request bounded tools when tools are enabled:
 - `replace_text`
 - `run_powershell`
 
-File/search tools accept relative paths only, reject traversal outside the active workspace/folder, reject direct or nested filesystem reparse-point traversal, and do not expose `.khz` internal metadata.
+File/search tools accept relative paths only, reject traversal outside the active workspace/folder, reject direct or nested filesystem reparse-point traversal, and do not expose `.khz` internal metadata. `read_file` returns the current SHA-256. `replace_text` accepts one exact old-text occurrence plus that expected SHA-256. A stale hash or non-unique old text is rejected. The proposed old/new text is shown to the user and the write requires explicit confirmation; publication uses a temporary sibling file followed by replacement and reports the resulting SHA-256. `run_powershell` is different: the exact proposed command and working directory are shown to the user and execution requires an explicit Yes/No confirmation for every call. A model tool call alone cannot authorize command execution. Execution then reuses the existing bounded PowerShell runner with timeout/cancellation/output limits and the existing non-elevated-app restriction.
 
-`read_file` returns the current SHA-256. `replace_text` accepts one exact old-text occurrence plus that expected SHA-256. A stale hash or non-unique old text is rejected. The proposed old/new text is shown to the user and the write requires explicit confirmation; publication uses a temporary sibling file followed by replacement and reports the resulting SHA-256.
+The llama.cpp built-in agent and host tools are disabled. KHZ also supplies one stdio MCP server with four narrower workspace tools:
 
-Repository inspection reuses KHZ's existing read-only repository inspector.
+- `workspace_list`
+- `workspace_read_text`
+- `workspace_search_text`
+- `workspace_propose_write_text`
 
-`run_powershell` is different: the exact proposed command and working directory are shown to the user and execution requires an explicit Yes/No confirmation for every call. A model tool call alone cannot authorize command execution. Execution then reuses the existing bounded PowerShell runner with timeout/cancellation/output limits and the existing non-elevated-app restriction.
+Direct access to `.khz`, `.git`, dependency/build metadata, absolute paths, traversal paths, and symlink/reparse escapes is denied. There is no MCP shell, Git write, remote network, arbitrary file write, approval, or verification tool.
 
-## Network
+## Proposal boundary
 
-The local model server is launched on loopback and with llama.cpp offline mode. KHZ does not configure a hosted AI provider in this path. This is not a claim that Windows globally blocks all process networking; OS-level egress enforcement remains a separate deployment control.
+`workspace_propose_write_text` never modifies the requested target. It captures the observed target SHA-256 and stores a `PENDING` proposal under `.khz/ai-proposals`.
 
-## Audit
+Only the native WPF proposal service can apply or reject it. Application requires an explicit user confirmation, re-reads the proposal, verifies workspace identity and path boundaries, compares the current target digest, stores a version snapshot, writes a flushed sibling temporary file, and atomically replaces the target. A stale proposal fails closed.
 
-Chat audit events record status, lengths, model label, tool-step counts, and whether hidden reasoning was persisted. Raw user prompts and raw PowerShell command text are not copied into the activity log by this feature.
+- Model self-identification authority: **NO**
+- Model approval authority: **NO**
+- Model shell authority: **NO**
+- Model access outside the active workspace: **NO**
+- Model verification authority: **NO**
+- Direct unconfirmed file mutation: **NO**
+- Direct unconfirmed PowerShell execution: **NO**
+- Automatic cloud fallback: **NO**
+- Automatic model downloads: **NO**
+- AI required for normal workspace use: **NO**
 
-## Authority
+## Existing typed action policy
 
-- Model self-identification authority: NO
-- Model approval authority: NO
-- Model verification authority: NO
-- Direct unconfirmed file mutation: NO
-- Direct unconfirmed PowerShell execution: NO
-- Automatic model downloads: NO
-- AI required for normal workspace use: NO
+The earlier `AIPolicy` / `ContextManifest` boundary remains available for structured application actions. It fails when AI is off, denies health-data release by default, and rejects unknown or workspace-mismatched actions. It does not grant the local model an executor.

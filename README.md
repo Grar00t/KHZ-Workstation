@@ -17,7 +17,7 @@ The .NET 9 WPF application currently includes:
 - Tasks
 - Repositories
 - Terminal
-- Chat
+- Local Assistant / Chat (optional llama.cpp runtime)
 - Activity
 - Security
 - Integrations
@@ -54,11 +54,65 @@ The repository contains two separate evidence tracks:
 1. a historical LibreOffice compatibility/round-trip acceptance baseline;
 2. a WPF ONLYOFFICE embedded spike behind a local gateway.
 
-The ONLYOFFICE spike is not a hardened production deployment claim. Review the Office ADRs and licensing notes before distribution.
+The ONLYOFFICE spike is **not production-ready** and is not a hardened production deployment claim. It now enables a fresh JWT secret on every launch, uses a separate browser-to-gateway token, accepts Document Server callbacks only from its exact container address, and publishes the runtime only on IPv4 loopback. The WPF client fails closed when no authenticated session is present. These are implemented prototype controls, not a production certification; review the Office ADRs and licensing notes before distribution.
 
 ## Verification
 
 The GitHub workflow builds the Windows .NET 9 solution and runs the Python core/`NO_AI_BASELINE` matrix on Windows and Ubuntu. Runtime claims remain narrower than build claims: the user's actual model/GPU path must be exercised before local inference is called runtime-verified.
+
+## Local-first boundary
+
+KHZ is designed so normal workspace use does not depend on an AI provider or mandatory cloud service.
+
+Current architectural goals:
+
+- real filesystem workspaces
+- local SQLite state and structured data
+- no mandatory AI
+- explicit capabilities for sensitive actions
+- bounded terminal execution with Windows Job Object lifecycle containment
+- local read-only Git inspection by default
+- deterministic backup manifests and hashes
+- replaceable integrations instead of vendor lock-in
+
+`local-first` does **not** mean every third-party child process is sandboxed. Job Objects terminate contained process trees but do not provide AppContainer filesystem or network isolation. OS policy still matters for hardened institutional deployment.
+
+## Optional local models (no Ollama dependency)
+
+KHZ can use current `llama.cpp` tools directly. No model is included and nothing is downloaded until the user runs `khz pull`.
+
+```powershell
+# after installing llama-download and llama-server from llama.cpp on PATH
+khz catalog
+khz pull qwen
+khz pull phi
+khz pull llama --accept-license
+
+# "lama" is accepted as an alias for "llama"
+khz serve qwen --workspace C:\Work\MyWorkspace
+```
+
+`khz pull` records the upstream source, license metadata, size, and SHA-256 digest. `khz serve` re-verifies the model, binds `llama-server` to `127.0.0.1`, creates an ephemeral API key, and exposes only the KHZ workspace MCP tools: bounded list/read/search plus write proposals. The model has no shell tool and cannot apply its own proposal; review and application happen in the WPF Local Assistant surface.
+
+See [`docs/LOCAL-AI.md`](docs/LOCAL-AI.md).
+
+## Verification status
+
+Verification claims in KHZ are intentionally narrow.
+
+| Area | Current evidence |
+|---|---|
+| Windows .NET 9 restore/build | VERIFIED in GitHub Actions |
+| Python core tests | VERIFIED on Windows and Ubuntu, Python 3.11/3.13 |
+| `NO_AI_BASELINE` | VERIFIED in CI |
+| LibreOffice compatibility corpus | VERIFIED/PARTIAL per individual fixture reports |
+| WPF Workspace Composer source/build | VERIFIED on its development branch; interactive UI proof still separate |
+| ONLYOFFICE local embedding spike | IMPLEMENTED AS A SPIKE; not a production security claim |
+| KHZ model manager and bounded workspace MCP | UNIT VERIFIED; real model/runtime smoke test pending |
+| Windows installer/MSI | UNVERIFIED |
+| Job Object process-tree lifecycle containment | IMPLEMENTED; AppContainer sandbox NOT IMPLEMENTED |
+
+`VERIFIED` never means certified, compliant, secure-by-default, or production-ready.
 
 ## Build the Windows application
 
@@ -81,7 +135,7 @@ windows/KHZ.App/              primary WPF Windows application
 src/khz_workstation/          deterministic Python services / baseline host
 scripts/                      build and acceptance utilities
 tests/                        core/security regression tests
-tools/office-spike/           local ONLYOFFICE integration spike
+tools/office-spike/           authenticated ONLYOFFICE local embedding spike
 acceptance/                   compatibility fixtures and evidence
 docs/                         architecture and deployment boundaries
 ```

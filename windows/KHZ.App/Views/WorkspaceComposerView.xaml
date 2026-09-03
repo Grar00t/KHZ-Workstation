@@ -187,6 +187,27 @@
             </Button>
 
             <Button Style="{StaticResource ComposerCard}"
+                    Tag="assistant"
+                    AutomationProperties.AutomationId="ComposerAssistantButton"
+                    Click="Navigate_Click">
+                <Grid Margin="16,12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Local Assistant"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="#5B43D6"/>
+                    <TextBlock Grid.Row="1"
+                               Text="Workspace-scoped GPT-style chat"
+                               Margin="0,5,0,0"
+                               FontSize="11"
+                               Foreground="#707070"/>
+                </Grid>
+            </Button>
+
+            <Button Style="{StaticResource ComposerCard}"
                     Tag="backup"
                     AutomationProperties.AutomationId="ComposerBackupButton"
                     Click="Navigate_Click">

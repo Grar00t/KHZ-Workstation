@@ -13,7 +13,7 @@ This ZIP does not bundle LibreOffice or ONLYOFFICE binaries.
 
 A copy of MPL-2.0 is included in `LICENSES/MPL-2.0.txt` for reference. The installed LibreOffice distribution contains its own authoritative notices for bundled components.
 
-## ONLYOFFICE Desktop Editors - optional external fallback detector
+## ONLYOFFICE - optional external integrations
 
 - Project: ONLYOFFICE Desktop Editors
 - License published by project: GNU AGPL v3
@@ -21,7 +21,19 @@ A copy of MPL-2.0 is included in `LICENSES/MPL-2.0.txt` for reference. The insta
 - Bundled in KHZ ZIP: NO
 - Linked/embedded: NO
 
+The repository also contains an experimental gateway/launcher for a pinned external ONLYOFFICE Document Server container image. The image is not bundled in this source package. It retains its upstream AGPLv3 licensing, notices, branding, and any additional applicable terms. See `docs/OFFICE-LICENSING.md` before any distribution.
+
 Commercial Developer licensing is a separate option for proprietary embedded integration and is not included here.
+
+## llama.cpp and optional model weights
+
+- Project: llama.cpp
+- Use: optional user-installed `llama-download` and `llama-server` runtime
+- License published by project: MIT
+- Source: https://github.com/ggml-org/llama.cpp
+- Bundled in KHZ ZIP: NO
+
+KHZ's model catalog can request external Llama, Qwen, or Phi GGUF weights. No weights are bundled. Each model retains its upstream license and distribution terms. KHZ records model source and license metadata in its local manifest; the user or deployment owner must review those terms before download or redistribution. Llama requires explicit `--accept-license` confirmation in the KHZ CLI.
 
 ## Optional deterministic automation Python packages
 

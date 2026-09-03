@@ -7,6 +7,7 @@ using KHZ.App.Repositories;
 using KHZ.App.Terminal;
 using KHZ.App.Settings;
 using KHZ.App.Workspaces;
+using KHZ.App.Office;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
 using System;
@@ -64,8 +65,8 @@ public partial class MainWindow : Window
     private readonly CapabilityPolicy _policy =
         CapabilityPolicy.CreateInstitutionalDefault();
 
-    private static readonly Uri GatewayHealth =
-        new("http://127.0.0.1:8090/health");
+    private readonly IOfficeEngineAdapter _officeEngine =
+        OnlyOfficeGatewayAdapter.FromEnvironment();
 
     private readonly HttpClient _http = new()
     {
@@ -136,6 +137,9 @@ public partial class MainWindow : Window
             _activity,
             _policy,
             _terminalSessionGate);
+
+        AssistantSurface.Configure(
+            _activity);
 
         _clockTimer.Tick += (_, _) => UpdateClock();
 
@@ -215,8 +219,26 @@ public partial class MainWindow : Window
 
         await OfficeWeb.EnsureCoreWebView2Async(env);
 
+        var webSettings =
+            OfficeWeb.CoreWebView2.Settings;
+
+        webSettings.AreDevToolsEnabled = false;
+        webSettings.AreDefaultContextMenusEnabled = false;
+        webSettings.AreBrowserAcceleratorKeysEnabled = false;
+        webSettings.IsStatusBarEnabled = false;
+        webSettings.IsPasswordAutosaveEnabled = false;
+        webSettings.IsGeneralAutofillEnabled = false;
+        webSettings.IsWebMessageEnabled = false;
+
         OfficeWeb.CoreWebView2.NavigationStarting += OfficeNavigationStarting;
         OfficeWeb.CoreWebView2.NewWindowRequested += OfficeNewWindowRequested;
+        OfficeWeb.CoreWebView2.AddWebResourceRequestedFilter(
+            "*",
+            CoreWebView2WebResourceContext.All);
+        OfficeWeb.CoreWebView2.WebResourceRequested +=
+            OfficeWebResourceRequested;
+
+        await AssistantSurface.InitializeAsync();
 
         await RefreshRuntimeStatusAsync();
         ShowHome();
@@ -289,6 +311,9 @@ public partial class MainWindow : Window
     {
         _activeWorkspace = context;
 
+        AssistantSurface.SetWorkspace(
+            context);
+
         StructuredDataSurface.SetWorkspace(
             context);
 
@@ -351,6 +376,9 @@ public partial class MainWindow : Window
 
         _activeWorkspace = null;
 
+        AssistantSurface.SetWorkspace(
+            null);
+
         StructuredDataSurface.SetWorkspace(
             null);
 
@@ -393,9 +421,39 @@ public partial class MainWindow : Window
 
     private async Task RefreshRuntimeStatusAsync()
     {
+        if (!_officeEngine.IsConfigured)
+        {
+            RuntimeStatus.Text = "Local Office session not started";
+            HomeRuntimeStatus.Text = "Authentication required";
+            RuntimeDot.Fill =
+                new SolidColorBrush(
+                    Color.FromRgb(190, 130, 55));
+            OfficeStatusText.Text = "OFFICE LOCKED";
+            OfficeStatusPill.Background =
+                new SolidColorBrush(
+                    Color.FromRgb(255, 244, 214));
+
+            _activity.Record(
+                category: "runtime",
+                action: "office.health",
+                target: _officeEngine.EngineId,
+                result: "NOT_CONFIGURED",
+                details: new
+                {
+                    authenticated = false,
+                    tokenCaptured = false
+                });
+
+            return;
+        }
+
         try
         {
-            using var response = await _http.GetAsync(GatewayHealth);
+            using var request =
+                _officeEngine.CreateHealthRequest();
+
+            using var response =
+                await _http.SendAsync(request);
 
             if (response.IsSuccessStatusCode)
             {
@@ -409,8 +467,13 @@ public partial class MainWindow : Window
                 _activity.Record(
                     category: "runtime",
                     action: "office.health",
-                    target: GatewayHealth.ToString(),
-                    result: "ONLINE");
+                    target: _officeEngine.EngineId,
+                    result: "ONLINE",
+                    details: new
+                    {
+                        authenticated = true,
+                        tokenCaptured = false
+                    });
 
                 return;
             }
@@ -429,8 +492,13 @@ public partial class MainWindow : Window
         _activity.Record(
             category: "runtime",
             action: "office.health",
-            target: GatewayHealth.ToString(),
-            result: "OFFLINE");
+            target: _officeEngine.EngineId,
+            result: "OFFLINE",
+            details: new
+            {
+                authenticated = true,
+                tokenCaptured = false
+            });
     }
 
     private async void RefreshStatus_Click(object sender, RoutedEventArgs e)
@@ -438,6 +506,30 @@ public partial class MainWindow : Window
 
     private void NavigateOffice(string kind)
     {
+        if (OfficeWeb.CoreWebView2 is null)
+            return;
+
+        if (!_officeEngine.IsConfigured)
+        {
+            RuntimeStatus.Text =
+                "Start the authenticated local Office runtime first";
+            OfficeStatusText.Text = "OFFICE LOCKED";
+
+            _activity.Record(
+                category: "navigation",
+                action: "office.open",
+                target: kind,
+                result: "BLOCKED",
+                details: new
+                {
+                    reason = "session_not_configured",
+                    tokenCaptured = false
+                });
+
+            return;
+        }
+
+        AssistantSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
@@ -448,10 +540,6 @@ public partial class MainWindow : Window
         SearchSurface.Visibility = Visibility.Collapsed;
         StructuredDataSurface.Visibility = Visibility.Collapsed;
         BackupRestoreSurface.Visibility = Visibility.Collapsed;
-
-        if (OfficeWeb.CoreWebView2 is null)
-            return;
-
         HomeSurface.Visibility = Visibility.Collapsed;
         FilesSurface.Visibility = Visibility.Collapsed;
         OfficeWeb.Visibility = Visibility.Visible;
@@ -471,12 +559,17 @@ public partial class MainWindow : Window
             target: kind,
             result: "REQUESTED");
 
-        OfficeWeb.CoreWebView2.Navigate(
-            $"http://localhost:8090/editor/{kind}");
+        var request =
+            _officeEngine.CreateEditorRequest(
+                kind);
+
+        NavigateOfficeRequest(
+            request);
     }
 
     private void ShowHome()
     {
+        AssistantSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
@@ -508,22 +601,98 @@ public partial class MainWindow : Window
         if (!Uri.TryCreate(uri, UriKind.Absolute, out var target))
             return false;
 
-        if (target.Scheme.Equals("about", StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        if (!target.Scheme.Equals("http", StringComparison.OrdinalIgnoreCase) &&
-            !target.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        var localHost =
-            target.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
-            target.Host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase);
-
         return
-            localHost &&
-            target.Port == 8090 &&
+            _officeEngine.IsAllowedNavigation(
+                target) &&
             _policy.IsAllowed(
                 Capability.LocalOfficeNavigation);
+    }
+
+    private static bool IsAllowedOfficeResource(
+        string uri)
+    {
+        if (!Uri.TryCreate(
+                uri,
+                UriKind.Absolute,
+                out var target))
+        {
+            return false;
+        }
+
+        if (target.Scheme.Equals(
+                "about",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return target.OriginalString.Equals(
+                "about:blank",
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (target.Scheme.Equals(
+                "data",
+                StringComparison.OrdinalIgnoreCase)
+            || target.Scheme.Equals(
+                "blob",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (!target.Scheme.Equals(
+                Uri.UriSchemeHttp,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var loopback =
+            target.Host.Equals(
+                "localhost",
+                StringComparison.OrdinalIgnoreCase)
+            || target.Host.Equals(
+                "127.0.0.1",
+                StringComparison.OrdinalIgnoreCase);
+
+        return
+            loopback
+            && target.Port is 8088 or 8090
+            && string.IsNullOrEmpty(
+                target.UserInfo);
+    }
+
+    private void NavigateOfficeRequest(
+        OfficeEditorRequest request)
+    {
+        var environment =
+            OfficeWeb.CoreWebView2?.Environment;
+
+        if (environment is null)
+            return;
+
+        var webRequest =
+            environment.CreateWebResourceRequest(
+                request.Uri.ToString(),
+                "GET",
+                postData: null,
+                request.AdditionalHeaders);
+
+        OfficeWeb.CoreWebView2.NavigateWithWebResourceRequest(
+            webRequest);
+    }
+
+    private static string SafeUriForAudit(
+        string uri)
+    {
+        if (!Uri.TryCreate(
+                uri,
+                UriKind.Absolute,
+                out var target))
+        {
+            return "invalid-uri";
+        }
+
+        return target.GetLeftPart(
+            UriPartial.Path);
     }
 
     private void OfficeNavigationStarting(
@@ -537,7 +706,7 @@ public partial class MainWindow : Window
             _activity.Record(
                 category: "security",
                 action: "webview.navigation",
-                target: e.Uri,
+                target: SafeUriForAudit(e.Uri),
                 result: "DENIED",
                 details: new
                 {
@@ -554,11 +723,48 @@ public partial class MainWindow : Window
         e.Handled = true;
 
         if (IsAllowedOfficeNavigation(e.Uri))
-            OfficeWeb.CoreWebView2?.Navigate(e.Uri);
+        {
+            NavigateOfficeRequest(
+                _officeEngine.CreateNavigationRequest(
+                    new Uri(e.Uri)));
+        }
+    }
+
+    private void OfficeWebResourceRequested(
+        object? sender,
+        CoreWebView2WebResourceRequestedEventArgs e)
+    {
+        if (IsAllowedOfficeResource(
+                e.Request.Uri))
+        {
+            return;
+        }
+
+        e.Response =
+            OfficeWeb.CoreWebView2.Environment
+                .CreateWebResourceResponse(
+                    null,
+                    403,
+                    "Blocked by KHZ local Office policy",
+                    "Content-Type: text/plain\r\n"
+                    + "Cache-Control: no-store\r\n");
+
+        _activity.Record(
+            category: "security",
+            action: "webview.resource",
+            target: SafeUriForAudit(
+                e.Request.Uri),
+            result: "DENIED",
+            details: new
+            {
+                policy = "office_loopback_only",
+                queryCaptured = false
+            });
     }
 
     private void Files_Click(object sender, RoutedEventArgs e)
     {
+        AssistantSurface.Visibility = Visibility.Collapsed;
         ActivitySurface.Visibility = Visibility.Collapsed;
         SecuritySurface.Visibility = Visibility.Collapsed;
         IntegrationsSurface.Visibility = Visibility.Collapsed;
@@ -900,6 +1106,7 @@ public partial class MainWindow : Window
         object sender,
         RoutedEventArgs e)
     {
+        AssistantSurface.Visibility = Visibility.Collapsed;
         _activity.Record(
             category: "navigation",
             action: "activity.open",
@@ -929,6 +1136,7 @@ public partial class MainWindow : Window
         object sender,
         RoutedEventArgs e)
     {
+        AssistantSurface.Visibility = Visibility.Collapsed;
         _activity.Record(
             category: "navigation",
             action: "security.open",
@@ -958,6 +1166,7 @@ public partial class MainWindow : Window
         object sender,
         RoutedEventArgs e)
     {
+        AssistantSurface.Visibility = Visibility.Collapsed;
         _activity.Record(
             category: "navigation",
             action: "terminal.open",
@@ -989,6 +1198,7 @@ public partial class MainWindow : Window
         object sender,
         RoutedEventArgs e)
     {
+        AssistantSurface.Visibility = Visibility.Collapsed;
         _activity.Record(
             category: "navigation",
             action: "structured-data.open",
@@ -1021,6 +1231,7 @@ public partial class MainWindow : Window
         object sender,
         RoutedEventArgs e)
     {
+        AssistantSurface.Visibility = Visibility.Collapsed;
         _activity.Record(
             category: "navigation",
             action: "backup-restore.open",
@@ -1054,6 +1265,7 @@ public partial class MainWindow : Window
         object sender,
         RoutedEventArgs e)
     {
+        AssistantSurface.Visibility = Visibility.Collapsed;
         _activity.Record(
             category: "navigation",
             action: "repositories.open",
@@ -1083,6 +1295,7 @@ public partial class MainWindow : Window
         object sender,
         RoutedEventArgs e)
     {
+        AssistantSurface.Visibility = Visibility.Collapsed;
         _activity.Record(
             category: "navigation",
             action: "tasks.open",
@@ -1110,6 +1323,7 @@ public partial class MainWindow : Window
         object sender,
         RoutedEventArgs e)
     {
+        AssistantSurface.Visibility = Visibility.Collapsed;
         _activity.Record(
             category: "navigation",
             action: "search.open",
@@ -1142,6 +1356,7 @@ public partial class MainWindow : Window
         object sender,
         RoutedEventArgs e)
     {
+        AssistantSurface.Visibility = Visibility.Collapsed;
         _activity.Record(
             category: "navigation",
             action: "integrations.open",
@@ -1170,6 +1385,7 @@ public partial class MainWindow : Window
         object sender,
         RoutedEventArgs e)
     {
+        AssistantSurface.Visibility = Visibility.Collapsed;
         _activity.Record(
             category: "navigation",
             action: "settings.open",
@@ -1206,6 +1422,41 @@ public partial class MainWindow : Window
     private void Pdf_Click(object sender, RoutedEventArgs e)
         => NavigateOffice("pdf");
 
+    private async void Assistant_Click(object sender, RoutedEventArgs e)
+    {
+        OfficeWeb.Visibility = Visibility.Collapsed;
+        HomeSurface.Visibility = Visibility.Collapsed;
+        FilesSurface.Visibility = Visibility.Collapsed;
+        ActivitySurface.Visibility = Visibility.Collapsed;
+        SecuritySurface.Visibility = Visibility.Collapsed;
+        IntegrationsSurface.Visibility = Visibility.Collapsed;
+        SettingsSurface.Visibility = Visibility.Collapsed;
+        SearchSurface.Visibility = Visibility.Collapsed;
+        TasksSurface.Visibility = Visibility.Collapsed;
+        StructuredDataSurface.Visibility = Visibility.Collapsed;
+        BackupRestoreSurface.Visibility = Visibility.Collapsed;
+        RepositoriesSurface.Visibility = Visibility.Collapsed;
+        TerminalSurface.Visibility = Visibility.Collapsed;
+
+        AssistantSurface.SetWorkspace(_activeWorkspace);
+        AssistantSurface.Visibility = Visibility.Visible;
+        SectionTitle.Text = "Local Assistant";
+
+        _activity.Record(
+            category: "navigation",
+            action: "ai.assistant.open",
+            target: _activeWorkspace?.Info.WorkspaceId ?? "folder-mode",
+            result: _activeWorkspace is null ? "BLOCKED" : "OPENED",
+            details: new
+            {
+                localOnly = true,
+                workspaceScoped = true,
+                modelCanApplyChanges = false
+            });
+
+        await AssistantSurface.RefreshSessionAsync();
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         _clockTimer.Stop();
@@ -1223,6 +1474,7 @@ public partial class MainWindow : Window
         }
 
         _http.Dispose();
+        AssistantSurface.Shutdown();
         base.OnClosed(e);
     }
 

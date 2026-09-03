@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "KHZ-Workstation-source-sbom",
-  "documentNamespace": "https://khz.invalid/spdx/KHZ-Workstation/0.1.0/2026-08-31",
+  "documentNamespace": "https://khz.invalid/spdx/KHZ-Workstation/0.1.0/2026-09-01",
   "creationInfo": {
-    "created": "2026-08-31T13:20:00Z",
+    "created": "2026-09-01T10:55:00Z",
     "creators": [
       "Tool: KHZ Workstation build assembly"
     ]
@@ -89,6 +89,36 @@
       "licenseConcluded": "NOASSERTION",
       "licenseDeclared": "MIT-CMU",
       "comment": "Development/test dependency only."
+    },
+    {
+      "name": "ONLYOFFICE Document Server",
+      "SPDXID": "SPDXRef-Package-ONLYOFFICE-DocumentServer-external",
+      "versionInfo": "container-image-by-digest",
+      "downloadLocation": "https://hub.docker.com/r/onlyoffice/documentserver",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "AGPL-3.0-only",
+      "comment": "External experimental runtime referenced by digest; not bundled in KHZ source or installer. Exact deployment and distribution require separate legal/security review."
+    },
+    {
+      "name": "llama.cpp",
+      "SPDXID": "SPDXRef-Package-llama-cpp-external",
+      "versionInfo": "user-installed-current-runtime",
+      "downloadLocation": "https://github.com/ggml-org/llama.cpp",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "comment": "Optional external llama-download/llama-server runtime; not bundled."
+    },
+    {
+      "name": "KHZ optional GGUF model catalog",
+      "SPDXID": "SPDXRef-Package-KHZ-model-catalog-external",
+      "versionInfo": "catalog-only",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "comment": "No weights are bundled. User-selected Llama, Qwen, or Phi downloads retain their upstream model-specific licenses; KHZ records source, license metadata, size, and SHA-256 per installation."
     }
   ]
 }

@@ -18,7 +18,7 @@ internal static class SlidePackage
     /// <summary>Slide parts in presentation order.</summary>
     internal static List<SlidePart> Slides(PresentationPart presentationPart)
     {
-        var list = presentationPart.Presentation?.SldIdList;
+        var list = presentationPart.Presentation?.SlideIdList;
 
         if (list is null)
             return [];
