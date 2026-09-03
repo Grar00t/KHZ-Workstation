@@ -12,9 +12,11 @@ class OfficeRegistry:
     def __init__(self) -> None:
         self.engines: list[IOfficeEngine] = [LibreOfficeEngine(), OnlyOfficeDesktopEngine()]
 
-    def selected(self) -> IOfficeEngine | None:
+    def selected(self, *, require_pdf: bool = False) -> IOfficeEngine | None:
         preferred = os.getenv("KHZ_OFFICE_ENGINE", "LibreOffice").casefold()
         available = [e for e in self.engines if e.info().available]
+        if require_pdf:
+            available = [e for e in available if e.info().can_convert_pdf]
         for engine in available:
             if preferred in engine.info().engine.casefold():
                 return engine

@@ -12,6 +12,8 @@ class OfficeEngineInfo:
     version: str | None
     available: bool
     integration: str
+    can_edit: bool = False
+    can_convert_pdf: bool = False
 
 
 class IOfficeEngine(ABC):
