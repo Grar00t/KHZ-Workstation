@@ -23,7 +23,16 @@ class OnlyOfficeDesktopEngine(IOfficeEngine):
         self.executable = next((x for x in candidates if x.exists()), None)
 
     def info(self) -> OfficeEngineInfo:
-        return OfficeEngineInfo("ONLYOFFICE Desktop Editors", str(self.executable) if self.executable else None, None, bool(self.executable), "out-of-process local desktop editor fallback")
+        available = bool(self.executable)
+        return OfficeEngineInfo(
+            "ONLYOFFICE Desktop Editors",
+            str(self.executable) if self.executable else None,
+            None,
+            available,
+            "out-of-process local desktop editor fallback; no deterministic CLI PDF path",
+            can_edit=available,
+            can_convert_pdf=False,
+        )
 
     def open_for_edit(self, path: Path) -> int | None:
         if not self.executable:

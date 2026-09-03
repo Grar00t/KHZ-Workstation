@@ -17,7 +17,10 @@ class GitService:
         self.root = root.resolve()
 
     def _run(self, args: list[str], timeout: int = 20) -> GitResult:
-        cp = subprocess.run(["git", "-C", str(self.root), *args], capture_output=True, text=True, timeout=timeout, encoding="utf-8", errors="replace")
+        try:
+            cp = subprocess.run(["git", "-C", str(self.root), *args], capture_output=True, text=True, timeout=timeout, encoding="utf-8", errors="replace")
+        except FileNotFoundError:
+            return GitResult(127, "", "git executable was not found on PATH.")
         return GitResult(cp.returncode, cp.stdout, cp.stderr)
 
     def is_repository(self) -> bool:
