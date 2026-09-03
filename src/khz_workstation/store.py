@@ -8,10 +8,14 @@ from pathlib import Path
 from typing import Iterator
 from uuid import uuid4
 
-from .models import Classification, WorkspaceInfo, utc_now
+from .models import Classification, utc_now
 
 _IDENT = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,62}$")
 _ALLOWED_TYPES = {"TEXT", "INTEGER", "REAL", "BLOB"}
+
+
+def _like_prefix(prefix: str) -> str:
+    return prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
 
 
 class WorkspaceStore:
@@ -99,9 +103,18 @@ class WorkspaceStore:
             con.execute("INSERT INTO items VALUES(?,?,?,?,?,?,?,?)", (item_id, self.workspace_id, relative_path, kind, sha256, classification.value, now, now))
             return item_id
 
-    def remove_item(self, relative_path: str) -> None:
+    def remove_item(self, relative_path: str, descendants: bool = False) -> int:
         with self.transaction() as con:
-            con.execute("DELETE FROM items WHERE workspace_id=? AND relative_path=?", (self.workspace_id, relative_path))
+            cur = con.execute("DELETE FROM items WHERE workspace_id=? AND relative_path=?", (self.workspace_id, relative_path))
+            removed = cur.rowcount or 0
+            if descendants:
+                prefix = relative_path.rstrip("/") + "/"
+                cur = con.execute(
+                    "DELETE FROM items WHERE workspace_id=? AND relative_path LIKE ? ESCAPE '\\'",
+                    (self.workspace_id, _like_prefix(prefix)),
+                )
+                removed += cur.rowcount or 0
+            return removed
 
     def list_items(self, kind: str | None = None) -> list[sqlite3.Row]:
         with self.connection() as con:
@@ -178,15 +191,7 @@ class WorkspaceStore:
             con.execute(f'INSERT INTO "{meta["sql_name"]}" (row_id{"," if cols else ""}{col_sql}) VALUES (?{"," if cols else ""}{placeholders})', [row_id, *[values[c] for c in cols]])
             return row_id
 
-    def query_data(
-        self,
-        table_id: str,
-        limit: int = 500,
-        *,
-        filters: dict[str, object] | None = None,
-        sort_by: str | None = None,
-        descending: bool = False,
-    ) -> tuple[list[str], list[sqlite3.Row]]:
+    def query_data(self, table_id: str, limit: int = 500, *, filters: dict[str, object] | None = None, sort_by: str | None = None, descending: bool = False) -> tuple[list[str], list[sqlite3.Row]]:
         limit = max(1, min(limit, 5000))
         with self.connection() as con:
             meta = con.execute("SELECT * FROM data_catalog WHERE table_id=? AND workspace_id=?", (table_id, self.workspace_id)).fetchone()
