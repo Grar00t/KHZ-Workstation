@@ -9,16 +9,20 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- Section 4: a socket introduced later must fail the build, not earn a comment. -->
     <WarningsAsErrors>RS0030</WarningsAsErrors>
+    <!-- No port, no network. The project itself references nothing off-machine.
+         The analyzer below is the only thing that would need a feed, so it is
+         opt-out: dotnet build -p:KhzOfflineBuild=true restores nothing. -->
+    <KhzOfflineBuild Condition="'$(KhzOfflineBuild)' == ''">false</KhzOfflineBuild>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(KhzOfflineBuild)' != 'true'">
     <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.3.4">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(KhzOfflineBuild)' != 'true'">
     <AdditionalFiles Include="BannedSymbols.txt" />
   </ItemGroup>
 

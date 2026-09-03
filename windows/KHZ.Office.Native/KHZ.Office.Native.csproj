@@ -9,20 +9,24 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- A socket introduced later must fail the build, not earn a review comment. -->
     <WarningsAsErrors>RS0030</WarningsAsErrors>
+    <!-- OPC is a ZIP and System.IO.Compression ships in the BCL, so this engine
+         has no off-machine dependency at all. The analyzer is opt-out:
+         dotnet build -p:KhzOfflineBuild=true restores nothing. -->
+    <KhzOfflineBuild Condition="'$(KhzOfflineBuild)' == ''">false</KhzOfflineBuild>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\KHZ.Office.Abstractions\KHZ.Office.Abstractions.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(KhzOfflineBuild)' != 'true'">
     <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.3.4">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(KhzOfflineBuild)' != 'true'">
     <AdditionalFiles Include="..\KHZ.Office.Abstractions\BannedSymbols.txt" Link="BannedSymbols.txt" />
   </ItemGroup>
 
