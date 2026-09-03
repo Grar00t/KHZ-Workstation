@@ -307,8 +307,7 @@ internal sealed class NiyahChatViewModel : INotifyPropertyChanged, IAsyncDisposa
         var router = KhzToolCatalog.CreateRouter();
 
         var context = ToolContext.ForRoot(
-            contextId: "niyah:" + rootPath,
-            rootPath: rootPath,
+            root: rootPath,
             confirmations: broker,
             audit: NullToolAuditSink.Instance,
             shell: new PowerShellRunner());

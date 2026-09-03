@@ -29,7 +29,7 @@ internal sealed class AgentApprovalWindow : Window
         Title = "KHZ - approve agent action";
         Width = 720;
         MaxHeight = 720;
-        SizeToContent = SizeToContentMode.Height;
+        SizeToContent = System.Windows.SizeToContent.Height;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         ShowInTaskbar = false;
         ResizeMode = ResizeMode.CanResize;
