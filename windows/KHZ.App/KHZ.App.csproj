@@ -21,4 +21,8 @@
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.8" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- The app and the MCP server share one tool implementation. -->
+    <ProjectReference Include="..\KHZ.Tools\KHZ.Tools.csproj" />
+  </ItemGroup>
 </Project>
