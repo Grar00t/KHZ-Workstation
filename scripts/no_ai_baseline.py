@@ -12,6 +12,7 @@ from khz_workstation.fileops import FileService
 from khz_workstation.gittools import GitService
 from khz_workstation.models import Classification, ContextManifest
 from khz_workstation.search import LocalSearch
+from khz_workstation.security.approval import Approval
 from khz_workstation.terminal import TerminalService
 from khz_workstation.workspace import Workspace
 
@@ -49,6 +50,24 @@ def main() -> int:
         # executable path as a string unless invoked with `&`.
         result = term.run("echo 12345", authorized=True, timeout=20)
         checks["terminal"] = result.exit_code == 0 and "12345" in result.stdout
+        # The digest-bound path is exercised here so the baseline report shows
+        # enforcement, not just the presence of the mechanism.
+        bound_term = TerminalService(ws.root, enabled=True, require_approval=True)
+        approval = Approval.for_subject("echo 67890", proposal_id="no-ai-baseline", granted_by="NO_AI_BASELINE")
+        bound = bound_term.run("echo 67890", approval=approval, timeout=20)
+        checks["terminal_approval_bound"] = bound.exit_code == 0 and bound.approval_binding == "DIGEST_BOUND"
+        probe = Approval.for_subject("echo 67890", proposal_id="no-ai-baseline", granted_by="NO_AI_BASELINE")
+        try:
+            bound_term.run("echo substituted", approval=probe, timeout=20)
+            checks["terminal_rejects_substitution"] = False
+        except PermissionError:
+            checks["terminal_rejects_substitution"] = True
+        try:
+            bound_term.run("echo 67890", authorized=True, timeout=20)
+            checks["terminal_rejects_bare_boolean"] = False
+        except PermissionError:
+            checks["terminal_rejects_bare_boolean"] = True
+        checks["terminal_env_isolated"] = "HF_TOKEN" not in term.build_env()
         backup = BackupService(ws).create(base / "baseline.khzbackup.zip")
         checks["backup"] = backup.exists()
         restored, _ = BackupService.restore(backup, base / "restored")
