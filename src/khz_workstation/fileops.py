@@ -38,6 +38,23 @@ class FileService:
         kind = OFFICE_KIND.get(path.suffix.lower(), "file")
         return self.ws.store.upsert_item(str(path.relative_to(self.ws.root)), kind, sha256_file(path))
 
+    def index_tree(self, relative: str) -> int:
+        root = self.ws.paths.resolve(relative, must_exist=True)
+        if root.is_file():
+            self.index_file(relative)
+            return 1
+        count = 0
+        for path in root.rglob("*"):
+            if not path.is_file() or self.ws.META_DIR in path.parts:
+                continue
+            rel = str(path.relative_to(self.ws.root))
+            try:
+                self.index_file(rel)
+                count += 1
+            except (OSError, ValueError):
+                continue
+        return count
+
     def scan(self) -> int:
         count = 0
         for path in self.ws.root.rglob("*"):
@@ -85,7 +102,7 @@ class FileService:
         trash = self.ws.root / self.ws.META_DIR / "trash" / f"{stamp}-{uuid4().hex[:8]}" / relative
         trash.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(str(source), str(trash))
-        self.ws.store.remove_item(relative)
+        self.ws.store.remove_item(relative, descendants=True)
         self.ws.audit.append(who=getuser(), what="file.safe_deleted", target=relative, result="MOVED_TO_WORKSPACE_TRASH")
         return trash
 
@@ -108,6 +125,7 @@ class FileService:
         dest.parent.mkdir(parents=True, exist_ok=True)
         if source.is_dir():
             shutil.copytree(source, dest)
+            self.index_tree(dest_rel)
         else:
             shutil.copy2(source, dest)
             self.index_file(dest_rel)
@@ -116,11 +134,14 @@ class FileService:
 
     def move(self, source_rel: str, dest_rel: str) -> Path:
         source = self.ws.paths.resolve(source_rel, must_exist=True)
+        was_dir = source.is_dir()
         dest = self.ws.paths.resolve(dest_rel)
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(str(source), str(dest))
-        self.ws.store.remove_item(source_rel)
+        self.ws.store.remove_item(source_rel, descendants=True)
         if dest.is_file():
             self.index_file(dest_rel)
+        elif was_dir or dest.is_dir():
+            self.index_tree(dest_rel)
         self.ws.audit.append(who=getuser(), what="file.moved", target=source_rel, result=dest_rel)
         return dest

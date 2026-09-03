@@ -1,0 +1,14 @@
+; Enforced by Microsoft.CodeAnalysis.BannedApiAnalyzers with WarningsAsErrors=RS0030.
+; Analysis section 4: prevention belongs in the analyzer, not in a document.
+; Adding any of these later is a BUILD FAILURE, not a review note.
+
+T:System.Net.Sockets.Socket;No sockets. The target machine runs with no network and no open port.
+T:System.Net.Sockets.TcpListener;No listeners. A port surface must fail the build.
+T:System.Net.Sockets.TcpClient;No outbound TCP.
+T:System.Net.Sockets.UdpClient;No outbound UDP.
+T:System.Net.HttpListener;No local gateway. The 127.0.0.1:8090 office gateway does not return.
+T:System.Net.Http.HttpClient;No HTTP. This is the carrier telemetry and auto-update arrive through.
+T:System.Net.WebClient;Obsolete HTTP carrier.
+T:System.Net.WebRequest;Obsolete HTTP carrier.
+T:System.Diagnostics.Process;An in-process engine must not spawn an external editor. Section 6: open_for_edit returned a PID and made an in-process engine impossible.
+T:System.Diagnostics.ProcessStartInfo;See System.Diagnostics.Process.

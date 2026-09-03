@@ -265,10 +265,10 @@ public partial class AssistantView : UserControl
 
         e.Response = AssistantWeb.CoreWebView2.Environment
             .CreateWebResourceResponse(
-                content: null,
-                statusCode: 403,
-                reasonPhrase: "Blocked by KHZ local AI policy",
-                headers: "Content-Type: text/plain\r\nCache-Control: no-store\r\n");
+                null,
+                403,
+                "Blocked by KHZ local AI policy",
+                "Content-Type: text/plain\r\nCache-Control: no-store\r\n");
         RecordBlocked("ai.webview.resource");
     }
 

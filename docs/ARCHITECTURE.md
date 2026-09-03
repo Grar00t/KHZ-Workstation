@@ -1,49 +1,48 @@
 # KHZ Workstation Architecture
 
-## Status
+## Current host
 
 This document describes implemented code in this repository plus explicitly identified future boundaries. It does not claim Windows runtime verification where none was performed.
 
 ## Host decision
 
-The Windows client is a .NET 9 WPF application under `windows/KHZ.App`. Python 3.11+ supplies deterministic workspace services, the original cross-platform host, model management, and the bounded workspace MCP server. Office rendering/editing remains behind a replaceable mature-engine boundary.
-
-## Major boundaries
+The primary desktop product is the native Windows WPF application under `windows/KHZ.App`, targeting .NET 9. Python 3.11+ under `src/khz_workstation` remains useful for deterministic services, acceptance/regression coverage, model management, and the bounded workspace MCP server; it is not the primary desktop shell.
 
 ```text
-WPF / Python UI
+KHZ WPF shell / Python services
   |
-  +-- Workspace / filesystem services
-  +-- SQLite metadata + structured Data
-  +-- Search
-  +-- Audit / versions / backup / restore
-  +-- Git adapter
-  +-- Terminal executor ----------------> Windows Job Object lifecycle containment
-  +-- Office adapter --------------------> external LibreOffice / authenticated ONLYOFFICE spike
-  +-- Network policy
-  +-- AI policy / model manager --------> optional llama.cpp loopback server
-                                            |
-                                            +-- bounded workspace MCP
+  +-- real workspace/filesystem
+  +-- .khz workspace identity + metadata
+  +-- local SQLite state / structured data / tasks
+  +-- search
+  +-- read-only Git inspection
+  +-- bounded PowerShell terminal
+  +-- backup / restore
+  +-- replaceable Office layer
+  +-- optional local chat
+         |
+         +-- user-supplied llama-server.exe
+         +-- user-supplied GGUF (+ optional LoRA/template)
+         +-- loopback HTTP only
+         +-- bounded workspace MCP
 ```
 
 ## Workspace ownership
 
-`Workspace` reads a stable `workspace_id` from `.khz/workspace.json`. Metadata rows include `workspace_id`. Path resolution never infers ownership from a UI selection; every filesystem operation is resolved against a concrete workspace root.
+A KHZ workspace stores stable identity in `.khz/workspace.json`. The native `WorkspaceService` validates the manifest, rejects reparse-point roots, binds metadata to the same `workspace_id`, and stores workspace metadata in `.khz/metadata.db`.
 
-`WorkspacePathResolver` rejects:
+Normal files remain normal filesystem files. KHZ does not move Office documents into a proprietary database.
 
-- absolute input paths;
-- `..` escapes;
-- resolved paths outside the workspace;
-- symlink/reparse traversal by default.
+## Local state
 
-## Storage separation
+Application state is SQLite under `%LOCALAPPDATA%\KHZ\state`.
 
-Office files remain filesystem files. The SQLite store contains metadata, structured Data tables, and task records. Office files are not placed into SQLite blobs.
+- `khz.db`: activity, settings, integrations, local tasks.
+- `local-ai.db`: local model configuration and chat history.
 
-SQLite settings include foreign-key enforcement and WAL journaling. Mutating store operations use explicit transactions and rollback on exceptions.
+Local AI is kept in a separate database so the normal workstation baseline does not depend on chat state or a model runtime.
 
-## File mutation
+## Office
 
 Direct KHZ writes use:
 
@@ -64,7 +63,7 @@ Python uses `IOfficeEngine`; WPF uses `IOfficeEngineAdapter`. Implemented paths 
 - `OnlyOfficeDesktopEngine` - external-process fallback detection.
 - `OnlyOfficeGatewayAdapter` - authenticated loopback request/navigation adapter for the experimental Document Server spike.
 
-Deterministic LibreOffice conversion and the historical corpus use external/headless processes. The ONLYOFFICE spike uses a pinned container, enabled JWT, signed per-route capabilities, a separate browser session token, and a restricted WebView2 host. It remains a spike and is not bundled as an approved distribution.
+Deterministic LibreOffice conversion and the historical corpus use external/headless processes. The WPF shell also contains a local ONLYOFFICE embedding spike behind a loopback gateway. The spike uses a pinned container, enabled JWT, signed per-route capabilities, a separate browser session token, and a restricted WebView2 host. It remains a spike and is not bundled as an approved distribution.
 
 ## AI boundary
 
@@ -82,41 +81,41 @@ Read-only operations never call remotes. `fetch`, `pull`, and `push` require bot
 
 ## Terminal
 
-Terminal commands are not model text. Python `TerminalService.run` requires `authorized=True`, bounds timeout, captures stdout/stderr/exit code, and fixes the working directory to the workspace root. The WPF runner also blocks elevated execution and fails closed unless it can attach the spawned PowerShell process to a kill-on-close Windows Job Object. This is process-tree lifecycle containment, not an AppContainer or filesystem/network sandbox.
+User terminal execution is explicit. Terminal commands are not model text. Python `TerminalService.run` requires `authorized=True`, bounds timeout, captures stdout/stderr/exit code, and fixes the working directory to the workspace root. The native WPF PowerShell runner also:
 
-## Audit
+- refuses to run while KHZ itself is elevated;
+- runs without stdin or hidden credential prompts;
+- fixes a concrete working directory;
+- bounds command length, timeout, stdout, and stderr;
+- kills the process tree on cancellation/timeout.
 
-Audit events are JSON Lines with:
+It fails closed unless it can attach the spawned PowerShell process to a kill-on-close Windows Job Object. This is process-tree lifecycle containment and execution control, not an AppContainer or filesystem/network sandbox.
 
-- timestamp;
-- actor;
-- action;
-- target;
-- intent;
-- approval;
-- execution;
-- result;
-- verification;
-- metadata;
-- previous hash;
-- event hash.
+## Local chat
 
-The chain detects simple tampering. It does not prove an event was truthful.
+Local chat is optional and session-disabled by default. KHZ does not download a model.
 
-## Backup / restore
+When enabled and configured, KHZ starts a user-supplied `llama-server.exe` on a dynamically chosen loopback port with offline mode. Model identity shown by the UI comes from KHZ configuration, not model prose.
 
-Backup files contain a workspace identity and file hashes. Publication occurs only after validation. Restore stages and verifies content before replacing a destination and preserves the old destination when one exists.
+The chat client does not persist separated model reasoning and strips common reasoning tags from visible compatibility output. Stored conversation history is bounded before inference.
 
-## Localization
+Available tools are explicit. Read/list/search/repository inspection stay inside the active workspace/folder and reject `.khz` plus reparse traversal. File mutation uses a SHA-256 precondition, unique exact replacement, user confirmation, and an atomic sibling publication path. PowerShell always requires separate confirmation of the exact proposed command.
 
-Canonical UI and logs are English (`en-US`). The host keeps locale as a setting so future resources can be added. Arabic parity is not claimed in this build.
+See `docs/AI-BOUNDARY.md` for the detailed contract.
 
-## Deterministic workspace services added in this build
+## Network
 
-- `FileService`: filesystem-backed rename/copy/move/import/safe-delete, hashes, atomic writes, and pre-edit version snapshots.
-- `DataWorkspaceService`: typed CSV/XLSX import/export over workspace-owned SQLite tables; filter/sort queries validate column names and bind values.
-- `SessionLockService`: delegates manual/Healthcare idle locking to the native Windows session lock instead of creating a KHZ password boundary.
-- `Localizer`: canonical `en-US` resource boundary plus secondary locale/RTL metadata; Arabic catalog/UI parity remains incomplete.
-- Cross-Office workflows: Sheet range → DOCX table, DOCX table → XLSX, DOCX outline → PPTX draft, and Office → PDF export.
+KHZ-managed network paths are intentionally narrow:
 
-These services are deterministic and do not invoke an LLM.
+- Office spike: loopback gateway.
+- local chat: dynamic `127.0.0.1` endpoint with llama.cpp offline mode.
+
+This is not a machine-wide firewall claim. Hardened institutional deployments still need OS/process-level egress controls for third-party child processes.
+
+## Verification
+
+Repository claims are evidence-scoped:
+
+- CI compilation/test success proves the checked-in code builds/tests in the configured runners.
+- runtime behavior is only called verified after the relevant executable path is exercised.
+- a model's fluent answer is never treated as verification of tool execution, model identity, or filesystem state.

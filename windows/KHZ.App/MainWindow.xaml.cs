@@ -743,12 +743,11 @@ public partial class MainWindow : Window
         e.Response =
             OfficeWeb.CoreWebView2.Environment
                 .CreateWebResourceResponse(
-                    content: null,
-                    statusCode: 403,
-                    reasonPhrase: "Blocked by KHZ local Office policy",
-                    headers:
-                        "Content-Type: text/plain\r\n"
-                        + "Cache-Control: no-store\r\n");
+                    null,
+                    403,
+                    "Blocked by KHZ local Office policy",
+                    "Content-Type: text/plain\r\n"
+                    + "Cache-Control: no-store\r\n");
 
         _activity.Record(
             category: "security",

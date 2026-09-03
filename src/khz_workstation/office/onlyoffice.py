@@ -23,7 +23,15 @@ class OnlyOfficeDesktopEngine(IOfficeEngine):
         self.executable = next((x for x in candidates if x.exists()), None)
 
     def info(self) -> OfficeEngineInfo:
-        return OfficeEngineInfo("ONLYOFFICE Desktop Editors", str(self.executable) if self.executable else None, None, bool(self.executable), "out-of-process local desktop editor fallback")
+        return OfficeEngineInfo(
+            "ONLYOFFICE Desktop Editors",
+            str(self.executable) if self.executable else None,
+            None,
+            bool(self.executable),
+            "out-of-process local desktop editor fallback",
+            can_edit=True,
+            can_convert_pdf=False,
+        )
 
     def open_for_edit(self, path: Path) -> int | None:
         if not self.executable:
@@ -31,4 +39,6 @@ class OnlyOfficeDesktopEngine(IOfficeEngine):
         return subprocess.Popen([str(self.executable), str(path)]).pid
 
     def convert_to_pdf(self, path: Path, output_dir: Path) -> Path:
-        raise NotImplementedError("Deterministic command-line PDF conversion is not implemented for this adapter.")
+        raise NotImplementedError(
+            "Deterministic command-line PDF conversion is not implemented for this adapter."
+        )
