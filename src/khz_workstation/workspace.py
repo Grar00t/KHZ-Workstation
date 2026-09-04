@@ -24,8 +24,14 @@ class Workspace:
             created_utc=raw["created_utc"],
             classification=Classification(raw.get("classification", Classification.INTERNAL.value)),
         )
+        self.manifest_schema_version = int(raw.get("schema_version", 1))
         self.paths = WorkspacePathResolver(self.root)
-        self.store = WorkspaceStore(self.root / self.META_DIR / "metadata.db", self.info.workspace_id)
+        self.store = WorkspaceStore(
+            self.root / self.META_DIR / "metadata.db",
+            self.info.workspace_id,
+            manifest_schema_version=self.manifest_schema_version,
+            created_utc=self.info.created_utc,
+        )
         self.audit = AuditLog(self.root / self.META_DIR / "audit.jsonl")
 
     @classmethod
