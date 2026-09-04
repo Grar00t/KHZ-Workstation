@@ -13,28 +13,62 @@ MAX_SOURCE_BYTES = 32 * 1024 * 1024
 MAX_COLUMNS = 256
 MAX_ROWS = 5000
 
+# Identifier parity contract.
+#
+# The WPF import path in windows/KHZ.App/StructuredData/CsvStructuredDataService.cs
+# (NormalizeIdentifier, NormalizeHeaders, MakeUniqueIdentifier) and this module
+# feed stores whose identifier gate is the same expression:
+#
+#     ^[A-Za-z][A-Za-z0-9_]{0,62}$
+#
+# Both normalizers must therefore produce the same name for the same header, and
+# every result must satisfy that gate. tests/test_structured_data_identifiers.py
+# asserts both properties.
+MAX_IDENTIFIER_LENGTH = 63
+IDENTIFIER_PREFIX = "Column_"
+RESERVED_ROW_ID = "row_id"
+RESERVED_ROW_ID_REPLACEMENT = "Source_row_id"
+
+_INVALID_IDENTIFIER_CHAR = re.compile(r"[^A-Za-z0-9_]")
+_ASCII_LETTER_START = re.compile(r"^[A-Za-z]")
+
 
 class DataDependencyError(RuntimeError):
     pass
 
 
 def _identifier(value: str, fallback: str) -> str:
-    value = re.sub(r"[^A-Za-z0-9_]", "_", value.strip())
-    if not value or not value[0].isalpha():
-        value = fallback + "_" + value
-    return value[:63]
+    source = value.strip() if value and value.strip() else fallback
+    candidate = _INVALID_IDENTIFIER_CHAR.sub("_", source).strip("_")
+    if not candidate:
+        candidate = fallback
+    if not _ASCII_LETTER_START.match(candidate):
+        candidate = IDENTIFIER_PREFIX + candidate
+    return candidate[:MAX_IDENTIFIER_LENGTH]
+
+
+def _unique_identifier(base: str, used: set[str]) -> str:
+    if base.casefold() not in used:
+        return base
+    n = 2
+    while True:
+        suffix = "_" + str(n)
+        keep = max(1, MAX_IDENTIFIER_LENGTH - len(suffix))
+        candidate = base[:keep] + suffix
+        if candidate.casefold() not in used:
+            return candidate
+        n += 1
 
 
 def _dedupe_headers(headers: list[str]) -> list[str]:
     out: list[str] = []
     used: set[str] = set()
     for idx, raw in enumerate(headers, 1):
-        base = _identifier(raw or f"Column{idx}", f"Column{idx}")
-        name = base
-        n = 2
-        while name.casefold() in used:
-            name = f"{base}_{n}"[:63]
-            n += 1
+        fallback = f"{IDENTIFIER_PREFIX}{idx}"
+        base = _identifier(raw or fallback, fallback)
+        if base.casefold() == RESERVED_ROW_ID:
+            base = RESERVED_ROW_ID_REPLACEMENT
+        name = _unique_identifier(base, used)
         used.add(name.casefold())
         out.append(name)
     return out
