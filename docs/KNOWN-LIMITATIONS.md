@@ -8,7 +8,7 @@
 
 ## Office
 
-- Office editing is out-of-process, not embedded inside the KHZ window.
+- LibreOffice editing remains external; the ONLYOFFICE Document Server path is embedded in WebView2 but remains an experimental spike.
 - LibreOffice 25.2.3.2 was tested on Linux; Windows behavior is unverified here.
 - DOCX synthetic TOC field did not survive the tested round-trip in the same structure.
 - PPTX object animation editing is unverified.
@@ -39,12 +39,13 @@
 
 - Git stage/unstage/commit methods exist but the primary UI is read-only.
 - Git network is policy controlled and not exposed as background behavior.
-- Terminal is a bounded subprocess runner, not a sandbox/container.
+- Terminal is a bounded subprocess runner with WPF Job Object process-tree lifecycle containment, not an AppContainer/container or filesystem/network sandbox.
 - Multiple interactive terminal sessions/PTY emulation are not implemented.
 
 ## Security
 
-- No Windows Job Object isolation backend.
+- Windows Job Object lifecycle containment is implemented for WPF terminal and local-model process trees but has not been runtime-verified in this Linux environment.
+- No AppContainer/restricted-token filesystem or network sandbox.
 - No DPAPI/Credential Manager integration.
 - Windows session locking is implemented through `LockWorkStation` for manual/Healthcare idle lock, but the Windows path is UNVERIFIED in this Linux environment.
 - No BitLocker state validation.
@@ -54,9 +55,10 @@
 
 ## AI
 
-- No llama.cpp or Ollama provider is wired in this package.
-- No model process is launched.
-- Structured action execution after user approval is not connected to a live provider.
+- Direct llama.cpp model pull/verification/serve and a workspace-bound MCP path are implemented; Ollama is not required.
+- No model weights or llama.cpp binaries are bundled, and a real Windows model/WebView smoke test has not been captured.
+- Model quality, hardware sizing, and upstream experimental MCP behavior vary by model/runtime version.
+- The local model can propose bounded text writes only; other typed application actions are not connected to the live runtime.
 
 ## Localization
 

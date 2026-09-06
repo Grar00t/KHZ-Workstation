@@ -200,6 +200,22 @@
                         </StackPanel>
                     </Button>
 
+                    <Button x:Name="AssistantButton"
+                            AutomationProperties.AutomationId="AssistantButton"
+                            Style="{StaticResource NavButton}"
+                            Background="#5B43D6"
+                            Click="Assistant_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="✦"
+                                       FontSize="16"
+                                       Width="28"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="Local Assistant"
+                                       VerticalAlignment="Center"
+                                       FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+
                     <Button x:Name="DocumentsButton"
                             Style="{StaticResource NavButton}"
                             Background="#185ABD"
@@ -716,6 +732,9 @@
 
                 <views:TerminalView x:Name="TerminalSurface"
                                     Visibility="Collapsed"/>
+
+                <views:AssistantView x:Name="AssistantSurface"
+                                     Visibility="Collapsed"/>
 
 
                 <Grid x:Name="FilesSurface"

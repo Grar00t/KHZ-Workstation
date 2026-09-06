@@ -83,14 +83,14 @@ Primary evidence:
 AI required for normal use: NO
 AI enabled by default: NO
 Healthcare AI enabled by default: NO
-Local providers: NONE ENABLED; provider interface exists
+Local providers: OPTIONAL llama.cpp session; none enabled by default
 Remote providers: NONE
-Model provenance implemented: PARTIAL (runtime metadata contract implemented; no live provider wired)
+Model provenance implemented: source/license manifest plus local size/SHA-256 verification; first-download trust remains
 Context release gate: VERIFIED by regression tests
 Structured action validation: VERIFIED by regression tests
-User approval: PARTIAL (typed host approvals exist; no live model-to-approval workflow is wired)
+User approval: IMPLEMENTED for bounded text-write proposals in the WPF Local Assistant
 Direct model shell access: NO
-Direct model filesystem access: NO
+Direct model filesystem access: BOUNDED workspace list/read/search only; protected metadata and links denied
 Direct model network access: NO
 Prompt-injection assumptions documented: YES
 ```

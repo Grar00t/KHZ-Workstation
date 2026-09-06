@@ -2,10 +2,14 @@
 
 ## Current host
 
-The primary desktop product is the native Windows WPF application under `windows/KHZ.App`, targeting .NET 9. The Python package under `src/khz_workstation` remains useful for deterministic services and acceptance/regression coverage; it is not the primary desktop shell.
+This document describes implemented code in this repository plus explicitly identified future boundaries. It does not claim Windows runtime verification where none was performed.
+
+## Host decision
+
+The primary desktop product is the native Windows WPF application under `windows/KHZ.App`, targeting .NET 9. Python 3.11+ under `src/khz_workstation` remains useful for deterministic services, acceptance/regression coverage, model management, and the bounded workspace MCP server; it is not the primary desktop shell.
 
 ```text
-KHZ WPF shell
+KHZ WPF shell / Python services
   |
   +-- real workspace/filesystem
   +-- .khz workspace identity + metadata
@@ -20,7 +24,7 @@ KHZ WPF shell
          +-- user-supplied llama-server.exe
          +-- user-supplied GGUF (+ optional LoRA/template)
          +-- loopback HTTP only
-         +-- bounded workspace tools
+         +-- bounded workspace MCP
 ```
 
 ## Workspace ownership
@@ -40,11 +44,44 @@ Local AI is kept in a separate database so the normal workstation baseline does 
 
 ## Office
 
-The WPF shell currently contains a local ONLYOFFICE embedding spike behind the loopback gateway at `127.0.0.1:8090`. Historical LibreOffice acceptance artifacts remain compatibility evidence. Neither fact implies that a third-party Office engine is globally sandboxed by KHZ.
+Direct KHZ writes use:
+
+1. optional pre-change snapshot;
+2. write to a unique temporary sibling;
+3. flush and fsync;
+4. `os.replace` to publish atomically where supported;
+5. hash/index update;
+6. audit metadata.
+
+Office edits are made by an external mature process. Before launch, KHZ captures a version snapshot. KHZ cannot guarantee the Office process itself uses KHZ's atomic-write algorithm.
+
+## Office boundary
+
+Python uses `IOfficeEngine`; WPF uses `IOfficeEngineAdapter`. Implemented paths include:
+
+- `LibreOfficeEngine` - selected when detected;
+- `OnlyOfficeDesktopEngine` - external-process fallback detection.
+- `OnlyOfficeGatewayAdapter` - authenticated loopback request/navigation adapter for the experimental Document Server spike.
+
+Deterministic LibreOffice conversion and the historical corpus use external/headless processes. The WPF shell also contains a local ONLYOFFICE embedding spike behind a loopback gateway. The spike uses a pinned container, enabled JWT, signed per-route capabilities, a separate browser session token, and a restricted WebView2 host. It remains a spike and is not bundled as an approved distribution.
+
+## AI boundary
+
+AI defaults OFF. `AIPolicy.require_enabled()` still fails closed before typed context release or action validation, and health-data release is denied by default.
+
+The optional `khz` CLI manages external GGUF models for direct `llama.cpp` execution. Pull records source/license metadata and a SHA-256 manifest; serve verifies it, binds one ephemeral authenticated loopback session to one workspace, and exposes only list/read/search/propose MCP tools. The WPF Local Assistant blocks external origins. A model-created write proposal cannot modify a target until the user explicitly applies it through KHZ with a fresh hash check and version snapshot.
+
+## Network policy
+
+`NetworkPolicy` implements `DENY`, `LOOPBACK_ONLY`, `ALLOWLIST`, and `UNRESTRICTED` decisions for KHZ-owned calls. It is not a universal OS firewall. Third-party Office, Git, plugin, update, or future model processes require process/OS-level controls for institutional zero-egress enforcement.
+
+## Git
+
+Read-only operations never call remotes. `fetch`, `pull`, and `push` require both explicit authorization and a policy-enabled flag.
 
 ## Terminal
 
-User terminal execution is explicit. The native PowerShell runner:
+User terminal execution is explicit. Terminal commands are not model text. Python `TerminalService.run` requires `authorized=True`, bounds timeout, captures stdout/stderr/exit code, and fixes the working directory to the workspace root. The native WPF PowerShell runner also:
 
 - refuses to run while KHZ itself is elevated;
 - runs without stdin or hidden credential prompts;
@@ -52,7 +89,7 @@ User terminal execution is explicit. The native PowerShell runner:
 - bounds command length, timeout, stdout, and stderr;
 - kills the process tree on cancellation/timeout.
 
-It is execution control, not an OS sandbox.
+It fails closed unless it can attach the spawned PowerShell process to a kill-on-close Windows Job Object. This is process-tree lifecycle containment and execution control, not an AppContainer or filesystem/network sandbox.
 
 ## Local chat
 

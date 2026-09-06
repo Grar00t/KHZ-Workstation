@@ -94,7 +94,7 @@ Before posting publicly:
 - Windows Release build passes for the exact launch head.
 - README matches the actual Office architecture.
 - The demo records a real running build, not a mockup.
-- The ONLYOFFICE spike is described as a spike/prototype while JWT remains disabled there.
+- The ONLYOFFICE path is described as a spike/prototype even though JWT and the KHZ session boundary are enabled; runtime interoperability still needs evidence.
 - No secrets, credentials, private paths or personal workspace content are visible.
 - Repository link opens on a coherent default branch.
 - Social preview image is set manually in GitHub repository settings if desired.

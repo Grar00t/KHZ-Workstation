@@ -10,13 +10,20 @@ internal enum TerminalExecutionStatus
     Failed
 }
 
+internal enum TerminalProcessContainment
+{
+    NotStarted,
+    WindowsJobObject
+}
+
 internal sealed record TerminalExecutionResult(
     TerminalExecutionStatus Status,
     int? ExitCode,
     string StandardOutput,
     string StandardError,
     DateTimeOffset StartedAt,
-    DateTimeOffset FinishedAt)
+    DateTimeOffset FinishedAt,
+    TerminalProcessContainment Containment)
 {
     public TimeSpan Duration =>
         FinishedAt - StartedAt;

@@ -19,6 +19,7 @@ automation = [
 ]
 
 [project.scripts]
+khz = "khz_workstation.cli:main"
 khz-workstation = "khz_workstation.app:main"
 
 [tool.setuptools.packages.find]

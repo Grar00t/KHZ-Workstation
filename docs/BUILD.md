@@ -6,7 +6,7 @@ Primary runtime target: Windows 11 x64. This source package was assembled and ex
 
 ## Core runtime
 
-KHZ Workstation has no mandatory third-party Python runtime dependency beyond Python 3.11+ with Tk.
+The Windows client requires .NET 9 and Microsoft Edge WebView2. The Python core has no mandatory third-party runtime dependency beyond Python 3.11+ with Tk. AI and Office engines remain optional external runtimes.
 
 Windows source setup:
 
@@ -51,7 +51,7 @@ python -m pip wheel . --no-deps --no-build-isolation -w dist
 
 ```powershell
 $env:PYTHONPATH = "$PWD\src"
-python -m compileall -q src tests scripts
+python -m compileall -q src tests scripts tools/office-spike
 python -m pip install -r requirements-automation.txt
 python -W error::ResourceWarning -m unittest discover -s tests -v
 python scripts\no_ai_baseline.py
@@ -61,4 +61,4 @@ Office corpus tests additionally require a locally installed LibreOffice and the
 
 ## CI status
 
-`.github/workflows/ci.yml` is provided as a reproducible Windows/Linux verification definition. The workflow file itself is **UNVERIFIED on GitHub Actions** in this ZIP because it has not been run in the user's repository.
+`.github/workflows/ci.yml` builds/tests Python on Windows and Ubuntu with Python 3.11/3.13, runs `NO_AI_BASELINE`, validates the Office launcher syntax on Linux, and restores/builds the .NET 9 WPF solution on Windows. Treat the Actions result for the exact commit as the verification record; it does not replace an interactive Windows runtime test.

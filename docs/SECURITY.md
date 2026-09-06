@@ -9,6 +9,10 @@ KHZ Workstation is not certified for a regulatory framework. This document separ
 - Health-data-to-AI deny by default.
 - Typed model-action allowlist; shell actions are rejected.
 - User authorization gate for terminal and Git writes/network operations.
+- Kill-on-close Windows Job Object containment for WPF terminal and local-model process trees.
+- Authenticated ONLYOFFICE spike: enabled JWT, separate browser token, signed route capabilities, exact container-source checks, and loopback-only publication.
+- Verified local-model manifests and a workspace MCP limited to bounded list/read/search/write-proposal tools.
+- Human-only AI proposal application with target hash recheck, version snapshot, flushed temporary write, and atomic replacement.
 - In-process network policy modes.
 - SQLite transactions and rollback tests.
 - Append-oriented audit hash chain with tamper detection.
@@ -20,7 +24,7 @@ KHZ Workstation is not certified for a regulatory framework. This document separ
 ## Not implemented / not claimed
 
 - Universal OS sandbox.
-- Windows Job Object resource/isolation backend.
+- AppContainer/restricted-token filesystem or network sandbox.
 - Windows Firewall rule management.
 - DPAPI/Credential Manager integration.
 - BitLocker provisioning or verification.
@@ -31,7 +35,7 @@ KHZ Workstation is not certified for a regulatory framework. This document separ
 
 ## Secrets
 
-The current build has no cloud credentials or model credentials. Future secrets must not be placed in workspace metadata, logs, or source. Windows Credential Manager/DPAPI is the preferred Windows implementation.
+The current build has no bundled cloud credentials. Office and local-model sessions generate ephemeral bearer/JWT values, do not put them on command lines or in audit records, and keep their session files outside the workspace. They are protected by the logged-in user's filesystem boundary, not DPAPI. Credential Manager/DPAPI remains the preferred Windows implementation for any long-lived secret.
 
 ## Encryption
 

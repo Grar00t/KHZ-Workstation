@@ -77,6 +77,8 @@ internal sealed class PowerShellTerminalRunner : ITerminalRunner
                 StartInfo = startInfo
             };
 
+        WindowsProcessJob containmentJob;
+
         try
         {
             if (!process.Start())
@@ -85,13 +87,24 @@ internal sealed class PowerShellTerminalRunner : ITerminalRunner
                     startedAt,
                     "PowerShell process could not be started.");
             }
+
+            containmentJob =
+                WindowsProcessJob.Attach(
+                    process);
         }
         catch (Exception ex)
         {
+            await TerminateAsync(
+                process);
+
             return Failed(
                 startedAt,
-                ex.Message);
+                "Terminal process containment could not be established; the process was terminated. "
+                + ex.Message);
         }
+
+        using var activeContainment =
+            containmentJob;
 
         var stdoutTask =
             ReadBoundedAsync(process.StandardOutput);
@@ -158,7 +171,9 @@ internal sealed class PowerShellTerminalRunner : ITerminalRunner
                 StandardOutput: stdout,
                 StandardError: stderr,
                 StartedAt: startedAt,
-                FinishedAt: DateTimeOffset.Now);
+                FinishedAt: DateTimeOffset.Now,
+                Containment:
+                    TerminalProcessContainment.WindowsJobObject);
         }
 
         var standardOutput =
@@ -175,7 +190,9 @@ internal sealed class PowerShellTerminalRunner : ITerminalRunner
             StandardOutput: standardOutput,
             StandardError: standardError,
             StartedAt: startedAt,
-            FinishedAt: DateTimeOffset.Now);
+            FinishedAt: DateTimeOffset.Now,
+            Containment:
+                TerminalProcessContainment.WindowsJobObject);
     }
 
     private static async Task TerminateAsync(
@@ -268,7 +285,9 @@ internal sealed class PowerShellTerminalRunner : ITerminalRunner
             StandardOutput: string.Empty,
             StandardError: error,
             StartedAt: startedAt,
-            FinishedAt: DateTimeOffset.Now);
+            FinishedAt: DateTimeOffset.Now,
+            Containment:
+                TerminalProcessContainment.NotStarted);
 
     private static string ResolvePowerShellExecutable()
     {

@@ -56,9 +56,13 @@ The spike launcher:
 - exposes the Document Server API to the host through loopback only;
 - exposes the KHZ gateway at `127.0.0.1:8090`;
 - disables plugins and metrics in the spike container;
-- prints `JWT_DISABLED_SPIKE_ONLY` explicitly.
+- enables a fresh, strong Document Server JWT secret for each runtime;
+- uses a separate, fresh browser-to-gateway bearer token;
+- signs short-lived file/callback capabilities for one editor kind and route;
+- accepts Document Server file/callback traffic only from its exact container address;
+- stages disposable runtime copies instead of editing acceptance fixtures in place.
 
-The WPF host allows Office WebView navigation only to `localhost` / `127.0.0.1` on port 8090 under the local-office capability policy.
+The WPF host fails closed without the session token, injects it into authenticated loopback requests, blocks external navigation/resources, and disables WebView development, password, autofill, context-menu, accelerator, and web-message features.
 
 These controls are useful prototype boundaries. They are **not sufficient evidence of a production-hardened deployment**.
 
@@ -67,7 +71,7 @@ These controls are useful prototype boundaries. They are **not sufficient eviden
 Before KHZ can describe an embedded ONLYOFFICE configuration as production-ready, the following require direct evidence:
 
 1. supported deployment topology for the intended Windows/local environment;
-2. JWT/authentication enabled and verified;
+2. JWT/authentication interoperability verified against the pinned real Document Server image on Windows;
 3. document fetch/callback authorization reviewed;
 4. no unintended non-loopback egress under the chosen deployment profile;
 5. update and vulnerability-management path documented;
@@ -75,7 +79,7 @@ Before KHZ can describe an embedded ONLYOFFICE configuration as production-ready
 7. backup/restore behavior proven with actively edited Office files;
 8. real Windows runtime capture and save/reopen proof;
 9. failure behavior proven when the Office runtime is unavailable;
-10. the `IOfficeEngine` or equivalent replaceable boundary preserved.
+10. the `IOfficeEngineAdapter` replaceable boundary preserved.
 
 Until those gates are satisfied, documentation must call this an **embedded spike**, **prototype**, or **integration experiment**.
 

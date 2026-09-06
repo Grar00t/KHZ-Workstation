@@ -342,6 +342,8 @@ public partial class TerminalView : UserControl
                     commandCaptured = false,
                     networkInspection =
                         "not_performed",
+                    processContainment =
+                        result.Containment.ToString(),
                     userInitiated = true,
                     aiUsed = false,
                     sandboxed = false
@@ -424,6 +426,9 @@ public partial class TerminalView : UserControl
 
         output.AppendLine(
             $"Duration: {result.Duration.TotalMilliseconds:0} ms");
+
+        output.AppendLine(
+            $"Process containment: {result.Containment}");
 
         output.AppendLine();
         output.AppendLine("STDOUT");
