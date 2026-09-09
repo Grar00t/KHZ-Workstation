@@ -381,7 +381,7 @@ public partial class MainWindow
     private void SetHeaderColor(string value)
     {
         _headerColor = value;
-        var color = (Color)ColorConverter.ConvertFromString(value);
+        var color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(value);
         HeaderColorButton.Background = new SolidColorBrush(color);
     }
 
