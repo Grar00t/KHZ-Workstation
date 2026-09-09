@@ -25,6 +25,8 @@
         <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="8" />
         <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="8" />
+        <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
 
       <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Title" Margin="0,0,8,0" />
@@ -33,8 +35,9 @@
       <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="Company" Margin="0,0,8,0" />
       <TextBox x:Name="CompanyBox" Grid.Column="4" Text="KHZ" Padding="8,5" />
 
-      <Button Grid.Column="6" Padding="14,6" Click="Refresh_Click">Refresh preview</Button>
-      <Button Grid.Column="8" Padding="14,6" Click="ExportPdf_Click">Export PDF</Button>
+      <Button Grid.Column="6" Padding="14,6" Click="ImportData_Click">Import data</Button>
+      <Button Grid.Column="8" Padding="14,6" Click="Refresh_Click">Refresh preview</Button>
+      <Button Grid.Column="10" Padding="14,6" Click="ExportPdf_Click">Export PDF</Button>
     </Grid>
 
     <Border Grid.Row="2" BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="4" Background="White">
@@ -45,6 +48,6 @@
                Grid.Row="3"
                Margin="0,10,0,0"
                Foreground="#555555"
-               Text="Local-only spike. No Office runtime is used." />
+               Text="Local-only spike. Import XLSX/CSV/TSV, preview locally, export PDF." />
   </Grid>
 </Window>
