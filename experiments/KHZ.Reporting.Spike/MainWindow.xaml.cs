@@ -4,7 +4,6 @@ using System.Windows;
 using LibRdlWpfViewer;
 using Majorsilence.Reporting.Rdl;
 using Microsoft.Data.Sqlite;
-using Microsoft.Win32;
 
 namespace KHZ.Reporting.Spike;
 
@@ -105,7 +104,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            var dialog = new SaveFileDialog
+            var dialog = new Microsoft.Win32.SaveFileDialog
             {
                 Title = "Export Asset Register",
                 Filter = "PDF document (*.pdf)|*.pdf",
@@ -129,6 +128,11 @@ public partial class MainWindow : Window
     private void ShowError(Exception ex)
     {
         StatusText.Text = ex.Message;
-        MessageBox.Show(this, ex.ToString(), "KHZ Reporting Spike", MessageBoxButton.OK, MessageBoxImage.Error);
+        System.Windows.MessageBox.Show(
+            this,
+            ex.ToString(),
+            "KHZ Reporting Spike",
+            MessageBoxButton.OK,
+            MessageBoxImage.Error);
     }
 }
