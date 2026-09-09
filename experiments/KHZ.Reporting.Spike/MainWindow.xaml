@@ -1,0 +1,50 @@
+<Window x:Class="KHZ.Reporting.Spike.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="KHZ Local Template Reporting Spike"
+        Width="1180"
+        Height="760"
+        MinWidth="900"
+        MinHeight="600">
+  <Grid Margin="16">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="12" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <Grid Grid.Row="0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="220" />
+        <ColumnDefinition Width="16" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="220" />
+        <ColumnDefinition Width="16" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="8" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+
+      <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Title" Margin="0,0,8,0" />
+      <TextBox x:Name="TitleBox" Grid.Column="1" Text="ASSET REGISTER" Padding="8,5" />
+
+      <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="Company" Margin="0,0,8,0" />
+      <TextBox x:Name="CompanyBox" Grid.Column="4" Text="KHZ" Padding="8,5" />
+
+      <Button Grid.Column="6" Padding="14,6" Click="Refresh_Click">Refresh preview</Button>
+      <Button Grid.Column="8" Padding="14,6" Click="ExportPdf_Click">Export PDF</Button>
+    </Grid>
+
+    <Border Grid.Row="2" BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="4" Background="White">
+      <ContentControl x:Name="ViewerHost" />
+    </Border>
+
+    <TextBlock x:Name="StatusText"
+               Grid.Row="3"
+               Margin="0,10,0,0"
+               Foreground="#555555"
+               Text="Local-only spike. No Office runtime is used." />
+  </Grid>
+</Window>
