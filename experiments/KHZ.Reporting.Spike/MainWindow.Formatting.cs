@@ -397,7 +397,7 @@ public partial class MainWindow
         FontFamilyBox.SelectedItem = match;
     }
 
-    private static string SelectedComboText(ComboBox comboBox)
+    private static string SelectedComboText(System.Windows.Controls.ComboBox comboBox)
     {
         if (comboBox.SelectedItem is ComboBoxItem item)
             return item.Content?.ToString() ?? "";
