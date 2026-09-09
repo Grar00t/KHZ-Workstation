@@ -50,7 +50,7 @@
       </Textbox>
       <Textbox Name="Generated">
         <Top>.57in</Top><Left>8.0in</Left><Width>2.99in</Width><Height>.12in</Height>
-        <Value>=Format(Now(), "yyyy-MM-dd HH:mm")</Value>
+        <Value>__GENERATED_AT__</Value>
         <Style><FontSize>7pt</FontSize><Color>#666666</Color><TextAlign>Right</TextAlign></Style>
       </Textbox>
     </ReportItems>
