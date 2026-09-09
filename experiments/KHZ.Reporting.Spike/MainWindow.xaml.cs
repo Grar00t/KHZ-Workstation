@@ -40,7 +40,7 @@ public partial class MainWindow : Window
         {
             try
             {
-                EnsureSampleDatabase();
+                EnsureDatabase();
                 await LoadReportAsync();
             }
             catch (Exception ex)
@@ -50,42 +50,24 @@ public partial class MainWindow : Window
         };
     }
 
-    private void EnsureSampleDatabase()
+    private void EnsureDatabase()
     {
         using var connection = new SqliteConnection($"Data Source={_databasePath}");
         connection.Open();
 
-        using (var schema = connection.CreateCommand())
-        {
-            schema.CommandText = """
-                PRAGMA journal_mode=WAL;
-                PRAGMA foreign_keys=ON;
+        using var schema = connection.CreateCommand();
+        schema.CommandText = """
+            PRAGMA journal_mode=WAL;
+            PRAGMA foreign_keys=ON;
 
-                CREATE TABLE IF NOT EXISTS assets (
-                    row_no      INTEGER PRIMARY KEY,
-                    tag         TEXT NOT NULL,
-                    description TEXT NOT NULL,
-                    location    TEXT NOT NULL
-                );
-                """;
-            schema.ExecuteNonQuery();
-        }
-
-        using var countCommand = connection.CreateCommand();
-        countCommand.CommandText = "SELECT COUNT(*) FROM assets;";
-        var count = Convert.ToInt64(countCommand.ExecuteScalar(), CultureInfo.InvariantCulture);
-        if (count != 0)
-            return;
-
-        using var seed = connection.CreateCommand();
-        seed.CommandText = """
-            INSERT INTO assets(row_no, tag, description, location) VALUES
-                (1, 'KU093973', 'DRAWER', 'COSHP-F...'),
-                (2, 'KU093974', 'CABINET', 'COSHP-F...'),
-                (3, 'KU093975', 'WORK BENCH', 'COSHP-G...'),
-                (4, 'KU093976', 'STORAGE RACK', 'COSHP-G...');
+            CREATE TABLE IF NOT EXISTS assets (
+                row_no      INTEGER PRIMARY KEY,
+                tag         TEXT NOT NULL,
+                description TEXT NOT NULL,
+                location    TEXT NOT NULL
+            );
             """;
-        seed.ExecuteNonQuery();
+        schema.ExecuteNonQuery();
     }
 
     private async Task LoadReportAsync()
