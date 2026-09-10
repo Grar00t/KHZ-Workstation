@@ -46,3 +46,45 @@ jobs:
         run: dotnet restore windows/KHZ.Workstation.sln
       - name: Build Windows app
         run: dotnet build windows/KHZ.Workstation.sln -c Release --no-restore
+
+  sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Regenerate source-files.sha256 from tracked tree
+        run: |
+          set -euo pipefail
+          cp SBOM/source-files.sha256 /tmp/committed.txt
+          awk '{print $2}' SBOM/source-files.sha256 | sed 's|^\./||' | sort -u > /tmp/paths_existing.txt
+          git ls-files | grep -E '^(src/|scripts/|tests/|docs/|acceptance/|LICENSES/|\.github/)' | sort -u > /tmp/paths_scope.txt
+          cat /tmp/paths_existing.txt /tmp/paths_scope.txt | sort -u > /tmp/paths_all.txt
+          missing=0
+          while IFS= read -r p; do
+            [ -f "$p" ] || { echo "MISSING: $p"; missing=$((missing+1)); }
+          done < /tmp/paths_all.txt
+          [ "$missing" -eq 0 ] || { echo "missing_count=$missing"; exit 1; }
+          : > /tmp/regenerated.txt
+          while IFS= read -r p; do
+            h=$(sha256sum "$p" | awk '{print $1}')
+            printf '%s  ./%s\n' "$h" "$p"
+          done < /tmp/paths_all.txt | LC_ALL=C sort -k2 > /tmp/regenerated.txt
+          echo "SBOM_ENTRIES=$(wc -l < /tmp/regenerated.txt | tr -d ' ')"
+      - name: Verify SBOM hashes
+        run: |
+          set -euo pipefail
+          sha256sum -c /tmp/regenerated.txt >/tmp/verify.txt 2>&1
+          ok=$(grep -c ': OK' /tmp/verify.txt || true)
+          failed=$(grep -c ': FAILED' /tmp/verify.txt || true)
+          echo "OK=$ok"
+          echo "FAILED=$failed"
+          [ "$failed" -eq 0 ]
+      - name: Fail on SBOM drift
+        run: |
+          set -euo pipefail
+          if ! cmp -s /tmp/committed.txt /tmp/regenerated.txt; then
+            echo "SBOM drift: committed source-files.sha256 does not match the regenerated tree."
+            diff -u /tmp/committed.txt /tmp/regenerated.txt || true
+            exit 1
+          fi
+          echo "SBOM_DRIFT=PASS"
+          cp /tmp/regenerated.txt SBOM/source-files.sha256
