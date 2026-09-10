@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2005/01/reportdefinition"
+        xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+  <PageHeight>8.27in</PageHeight>
+  <PageWidth>11.69in</PageWidth>
+  <TopMargin>.35in</TopMargin>
+  <LeftMargin>.35in</LeftMargin>
+  <RightMargin>.35in</RightMargin>
+  <BottomMargin>.35in</BottomMargin>
+  <Width>10.99in</Width>
+
+  <DataSources>
+    <DataSource Name="DS1">
+      <ConnectionProperties>
+        <DataProvider>Microsoft.Data.Sqlite</DataProvider>
+        <ConnectString>Data Source=__DB_PATH__</ConnectString>
+      </ConnectionProperties>
+    </DataSource>
+  </DataSources>
+
+  <DataSets>
+    <DataSet Name="Assets">
+      <Query>
+        <DataSourceName>DS1</DataSourceName>
+        <CommandText>SELECT row_no, tag, description, location FROM assets ORDER BY row_no</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="row_no"><DataField>row_no</DataField><rd:TypeName>System.Int64</rd:TypeName></Field>
+        <Field Name="tag"><DataField>tag</DataField><rd:TypeName>System.String</rd:TypeName></Field>
+        <Field Name="description"><DataField>description</DataField><rd:TypeName>System.String</rd:TypeName></Field>
+        <Field Name="location"><DataField>location</DataField><rd:TypeName>System.String</rd:TypeName></Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+
+  <PageHeader>
+    <Height>.72in</Height>
+    <PrintOnFirstPage>true</PrintOnFirstPage>
+    <PrintOnLastPage>true</PrintOnLastPage>
+    <ReportItems>
+      <Textbox Name="Company">
+        <Top>.05in</Top><Left>0in</Left><Width>3.2in</Width><Height>.22in</Height>
+        <Value>__COMPANY__</Value>
+        <Style><FontSize>10pt</FontSize><FontWeight>Bold</FontWeight><Color>#444444</Color></Style>
+      </Textbox>
+      <Textbox Name="Title">
+        <Top>.23in</Top><Left>0in</Left><Width>10.99in</Width><Height>.34in</Height>
+        <Value>__REPORT_TITLE__</Value>
+        <Style><FontSize>17pt</FontSize><FontWeight>Bold</FontWeight><TextAlign>Center</TextAlign></Style>
+      </Textbox>
+      <Textbox Name="Generated">
+        <Top>.57in</Top><Left>8.0in</Left><Width>2.99in</Width><Height>.12in</Height>
+        <Value>__GENERATED_AT__</Value>
+        <Style><FontSize>7pt</FontSize><Color>#666666</Color><TextAlign>Right</TextAlign></Style>
+      </Textbox>
+    </ReportItems>
+  </PageHeader>
+
+  <Body>
+    <Height>2.2in</Height>
+    <ReportItems>
+      <Table Name="AssetTable">
+        <DataSetName>Assets</DataSetName>
+        <NoRows>No assets found.</NoRows>
+        <Top>0in</Top><Left>0in</Left>
+        <TableColumns>
+          <TableColumn><Width>.7in</Width></TableColumn>
+          <TableColumn><Width>2.1in</Width></TableColumn>
+          <TableColumn><Width>5.39in</Width></TableColumn>
+          <TableColumn><Width>2.8in</Width></TableColumn>
+        </TableColumns>
+        <Header>
+          <TableRows>
+            <TableRow>
+              <Height>.32in</Height>
+              <TableCells>
+                <TableCell><ReportItems><Textbox Name="HNo"><Value>NO.</Value><Style><FontWeight>Bold</FontWeight><BackgroundColor>#4472C4</BackgroundColor><Color>White</Color><TextAlign>Center</TextAlign><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#D0D0D0</Default></BorderColor></Style></Textbox></ReportItems></TableCell>
+                <TableCell><ReportItems><Textbox Name="HTag"><Value>TAG NUMBER</Value><Style><FontWeight>Bold</FontWeight><BackgroundColor>#4472C4</BackgroundColor><Color>White</Color><TextAlign>Center</TextAlign><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#D0D0D0</Default></BorderColor></Style></Textbox></ReportItems></TableCell>
+                <TableCell><ReportItems><Textbox Name="HDescription"><Value>ASSET DESCRIPTION</Value><Style><FontWeight>Bold</FontWeight><BackgroundColor>#4472C4</BackgroundColor><Color>White</Color><TextAlign>Center</TextAlign><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#D0D0D0</Default></BorderColor></Style></Textbox></ReportItems></TableCell>
+                <TableCell><ReportItems><Textbox Name="HLocation"><Value>M/LOC</Value><Style><FontWeight>Bold</FontWeight><BackgroundColor>#4472C4</BackgroundColor><Color>White</Color><TextAlign>Center</TextAlign><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#D0D0D0</Default></BorderColor></Style></Textbox></ReportItems></TableCell>
+              </TableCells>
+            </TableRow>
+          </TableRows>
+          <RepeatOnNewPage>true</RepeatOnNewPage>
+        </Header>
+        <Details>
+          <TableRows>
+            <TableRow>
+              <Height>.29in</Height>
+              <TableCells>
+                <TableCell><ReportItems><Textbox Name="RowNo"><Value>=Fields!row_no.Value</Value><Style><BackgroundColor>=IIf(RowNumber(Nothing) Mod 2 = 0, "#E9EFF7", "White")</BackgroundColor><TextAlign>Center</TextAlign><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#D0D0D0</Default></BorderColor></Style></Textbox></ReportItems></TableCell>
+                <TableCell><ReportItems><Textbox Name="Tag"><Value>=Fields!tag.Value</Value><Style><BackgroundColor>=IIf(RowNumber(Nothing) Mod 2 = 0, "#E9EFF7", "White")</BackgroundColor><PaddingLeft>5pt</PaddingLeft><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#D0D0D0</Default></BorderColor></Style></Textbox></ReportItems></TableCell>
+                <TableCell><ReportItems><Textbox Name="Description"><Value>=Fields!description.Value</Value><CanGrow>true</CanGrow><Style><BackgroundColor>=IIf(RowNumber(Nothing) Mod 2 = 0, "#E9EFF7", "White")</BackgroundColor><PaddingLeft>5pt</PaddingLeft><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#D0D0D0</Default></BorderColor></Style></Textbox></ReportItems></TableCell>
+                <TableCell><ReportItems><Textbox Name="Location"><Value>=Fields!location.Value</Value><Style><BackgroundColor>=IIf(RowNumber(Nothing) Mod 2 = 0, "#E9EFF7", "White")</BackgroundColor><PaddingLeft>5pt</PaddingLeft><VerticalAlign>Middle</VerticalAlign><BorderStyle><Default>Solid</Default></BorderStyle><BorderColor><Default>#D0D0D0</Default></BorderColor></Style></Textbox></ReportItems></TableCell>
+              </TableCells>
+            </TableRow>
+          </TableRows>
+        </Details>
+      </Table>
+    </ReportItems>
+  </Body>
+
+  <PageFooter>
+    <Height>.25in</Height>
+    <PrintOnFirstPage>true</PrintOnFirstPage>
+    <PrintOnLastPage>true</PrintOnLastPage>
+    <ReportItems>
+      <Textbox Name="PageNumber">
+        <Top>.05in</Top><Left>8.5in</Left><Width>2.49in</Width><Height>.14in</Height>
+        <Value>="Page " &amp; Globals!PageNumber</Value>
+        <Style><FontSize>8pt</FontSize><Color>#666666</Color><TextAlign>Right</TextAlign></Style>
+      </Textbox>
+    </ReportItems>
+  </PageFooter>
+</Report>

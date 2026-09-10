@@ -1,0 +1,196 @@
+<Window x:Class="KHZ.Reporting.Spike.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="KHZ Local Template Reporting Spike"
+        Width="1280"
+        Height="800"
+        MinWidth="980"
+        MinHeight="640"
+        Loaded="Formatting_Loaded">
+  <Grid Margin="12">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="8" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="8" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <Grid Grid.Row="0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="220" />
+        <ColumnDefinition Width="16" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="220" />
+        <ColumnDefinition Width="16" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="8" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="8" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+
+      <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Title" Margin="0,0,8,0" />
+      <TextBox x:Name="TitleBox" Grid.Column="1" Text="ASSET REGISTER" Padding="8,5" />
+
+      <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="Header" Margin="0,0,8,0" />
+      <TextBox x:Name="CompanyBox" Grid.Column="4" Text="KHZ" Padding="8,5" />
+
+      <Button Grid.Column="6" Padding="14,6" Click="ImportData_Click">Import data</Button>
+      <Button Grid.Column="8" Padding="14,6" Click="Refresh_Click">Refresh preview</Button>
+      <Button Grid.Column="10" Padding="14,6" Click="ExportPdf_Click">Export PDF</Button>
+    </Grid>
+
+    <Border Grid.Row="2"
+            BorderBrush="#D5D5D5"
+            BorderThickness="1"
+            CornerRadius="4"
+            Background="#F7F7F7"
+            Padding="6">
+      <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                    VerticalScrollBarVisibility="Disabled">
+        <StackPanel Orientation="Horizontal">
+          <TextBlock VerticalAlignment="Center" Text="Template" Margin="2,0,6,0" />
+          <ComboBox x:Name="TemplatePresetBox" Width="135" Margin="0,0,6,0">
+            <ComboBoxItem IsSelected="True">Corporate Blue</ComboBoxItem>
+            <ComboBoxItem>Slate</ComboBoxItem>
+            <ComboBoxItem>Minimal</ComboBoxItem>
+            <ComboBoxItem>Arabic</ComboBoxItem>
+          </ComboBox>
+          <Button Padding="10,4" Margin="0,0,14,0" Click="ApplyPresetEditor_Click">Apply preset</Button>
+
+          <TextBlock VerticalAlignment="Center" Text="Target" Margin="0,0,6,0" />
+          <ComboBox x:Name="FormatTargetBox"
+                    Width="92"
+                    Margin="0,0,10,0"
+                    SelectionChanged="EditorStyleControl_Changed">
+            <ComboBoxItem IsSelected="True">Title</ComboBoxItem>
+            <ComboBoxItem>Company</ComboBoxItem>
+            <ComboBoxItem>Table</ComboBoxItem>
+          </ComboBox>
+
+          <ComboBox x:Name="FontFamilyBox"
+                    Width="165"
+                    IsTextSearchEnabled="True"
+                    Margin="0,0,6,0"
+                    SelectionChanged="EditorStyleControl_Changed" />
+          <ComboBox x:Name="FontSizeBox"
+                    Width="62"
+                    IsEditable="True"
+                    Margin="0,0,6,0"
+                    LostKeyboardFocus="EditorStyleField_LostFocus" />
+
+          <ToggleButton x:Name="BoldToggle"
+                        Width="34"
+                        FontWeight="Bold"
+                        Margin="0,0,4,0"
+                        Checked="EditorStyleToggle_Changed"
+                        Unchecked="EditorStyleToggle_Changed">B</ToggleButton>
+          <ToggleButton x:Name="ItalicToggle"
+                        Width="34"
+                        FontStyle="Italic"
+                        Margin="0,0,8,0"
+                        Checked="EditorStyleToggle_Changed"
+                        Unchecked="EditorStyleToggle_Changed">I</ToggleButton>
+
+          <Button Width="36" ToolTip="Align left" Click="EditorAlignLeft_Click">L</Button>
+          <Button Width="36" ToolTip="Align center" Click="EditorAlignCenter_Click">C</Button>
+          <Button Width="36" ToolTip="Align right" Margin="0,0,10,0" Click="EditorAlignRight_Click">R</Button>
+
+          <Button x:Name="HeaderColorButton"
+                  Width="34"
+                  Height="26"
+                  Background="#4472C4"
+                  ToolTip="Table header color"
+                  Margin="0,0,6,0"
+                  Click="PickHeaderColorEditor_Click" />
+          <TextBlock VerticalAlignment="Center" Text="Header" Margin="0,0,12,0" />
+
+          <Button Padding="10,4" Margin="0,0,5,0" Click="SelectLogo_Click">Logo…</Button>
+          <Button Padding="8,4" Margin="0,0,6,0" Click="ClearLogo_Click">×</Button>
+          <TextBlock x:Name="LogoNameText"
+                     Width="100"
+                     Text="No logo"
+                     TextTrimming="CharacterEllipsis"
+                     VerticalAlignment="Center"
+                     Margin="0,0,12,0" />
+
+          <Button Padding="12,4" Margin="0,0,14,0" Click="ApplyStyleEditor_Click">Apply style</Button>
+
+          <Button Width="34" Click="ZoomOut_Click">−</Button>
+          <Button Width="48" Margin="4,0" Click="ZoomReset_Click"><TextBlock x:Name="ZoomText">100%</TextBlock></Button>
+          <Button Width="34" Click="ZoomIn_Click">+</Button>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+
+    <TabControl x:Name="WorkspaceTabs"
+                Grid.Row="4"
+                SelectionChanged="WorkspaceTabs_SelectionChanged">
+      <TabItem x:Name="EditTab" Header="Edit table">
+        <Grid Margin="8">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="8" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+
+          <StackPanel Orientation="Horizontal">
+            <Button Padding="12,5" Margin="0,0,6,0" Click="AddEditorRow_Click">+ Row</Button>
+            <Button Padding="12,5" Margin="0,0,6,0" Click="DeleteEditorRows_Click">Delete selected</Button>
+            <Button Padding="12,5" Margin="0,0,6,0" Click="SaveEditorData_Click">Save data</Button>
+            <Button Padding="12,5" Click="SaveAndPreview_Click">Save + Preview</Button>
+            <TextBlock Margin="14,0,0,0"
+                       VerticalAlignment="Center"
+                       Foreground="#666666"
+                       Text="Double-click a cell and type. Columns can be resized, reordered and sorted." />
+          </StackPanel>
+
+          <DataGrid x:Name="AssetGrid"
+                    Grid.Row="2"
+                    AutoGenerateColumns="False"
+                    CanUserAddRows="True"
+                    CanUserDeleteRows="True"
+                    CanUserResizeColumns="True"
+                    CanUserReorderColumns="True"
+                    CanUserSortColumns="True"
+                    SelectionMode="Extended"
+                    SelectionUnit="FullRow"
+                    GridLinesVisibility="All"
+                    HeadersVisibility="All"
+                    RowHeaderWidth="28"
+                    Loaded="AssetGrid_Loaded">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="NO." Binding="{Binding RowNo, UpdateSourceTrigger=PropertyChanged}" Width="80" />
+              <DataGridTextColumn Header="TAG NUMBER" Binding="{Binding Tag, UpdateSourceTrigger=PropertyChanged}" Width="180" />
+              <DataGridTextColumn Header="ASSET DESCRIPTION" Binding="{Binding Description, UpdateSourceTrigger=PropertyChanged}" Width="*" MinWidth="260" />
+              <DataGridTextColumn Header="M/LOC" Binding="{Binding Location, UpdateSourceTrigger=PropertyChanged}" Width="220" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </Grid>
+      </TabItem>
+
+      <TabItem x:Name="PreviewTab" Header="Print preview">
+        <Border BorderBrush="#D0D0D0"
+                BorderThickness="1"
+                Background="White"
+                ClipToBounds="True">
+          <ContentControl x:Name="ViewerHost"
+                          RenderTransformOrigin="0,0">
+            <ContentControl.LayoutTransform>
+              <ScaleTransform x:Name="PreviewScale" ScaleX="1" ScaleY="1" />
+            </ContentControl.LayoutTransform>
+          </ContentControl>
+        </Border>
+      </TabItem>
+    </TabControl>
+
+    <TextBlock x:Name="StatusText"
+               Grid.Row="5"
+               Margin="0,8,0,0"
+               Foreground="#555555"
+               Text="Local-only editor. Edit table data directly, import XLSX/CSV/TSV, style, preview and export PDF." />
+  </Grid>
+</Window>
