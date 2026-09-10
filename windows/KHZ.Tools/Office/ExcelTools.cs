@@ -16,12 +16,40 @@ namespace KHZ.Tools.Office;
 /// <summary>Shared XLSX package navigation.</summary>
 internal static class ExcelPackage
 {
+    /// <summary>Resolves the workbook root, failing closed on a corrupt package.</summary>
+    internal static Workbook RequireWorkbook(WorkbookPart workbookPart)
+    {
+        if (workbookPart is null)
+            throw new ToolFailureException(
+                "invalid_package",
+                "The .xlsx package has no workbook part.");
+
+        return workbookPart.Workbook
+               ?? throw new ToolFailureException(
+                   "invalid_package",
+                   "The .xlsx workbook part has no workbook element.");
+    }
+
+    /// <summary>Resolves the worksheet root, failing closed on a corrupt package.</summary>
+    internal static Worksheet RequireWorksheet(WorksheetPart part)
+    {
+        if (part is null)
+            throw new ToolFailureException(
+                "invalid_package",
+                "The .xlsx package has no worksheet part.");
+
+        return part.Worksheet
+               ?? throw new ToolFailureException(
+                   "invalid_package",
+                   "The .xlsx worksheet part has no worksheet element.");
+    }
+
     /// <summary>Finds a worksheet part by sheet name, or the first sheet when omitted.</summary>
     internal static (WorksheetPart Part, string Name) OpenSheet(
         WorkbookPart workbookPart,
         string? sheetName)
     {
-        var sheets = workbookPart.Workbook
+        var sheets = ExcelPackage.RequireWorkbook(workbookPart)
             .Descendants<Sheet>()
             .Where(sheet => sheet.Id?.Value is not null)
             .ToList();
@@ -149,12 +177,13 @@ internal static class ExcelPackage
     /// </remarks>
     internal static void ForceRecalculation(WorkbookPart workbookPart)
     {
-        var properties = workbookPart.Workbook.GetFirstChild<CalculationProperties>();
+        var workbook = ExcelPackage.RequireWorkbook(workbookPart);
+        var properties = workbook.GetFirstChild<CalculationProperties>();
 
         if (properties is null)
         {
             properties = new CalculationProperties();
-            workbookPart.Workbook.AppendChild(properties);
+            workbook.AppendChild(properties);
         }
 
         properties.FullCalculationOnLoad = BooleanValue.FromBoolean(true);
@@ -214,7 +243,7 @@ public sealed class ReadSheetTool : IKhzTool
             ToolArgs.OptionalString(arguments, "sheet"));
 
         var sharedStrings = workbookPart.SharedStringTablePart?.SharedStringTable;
-        var sheetData = part.Worksheet.GetFirstChild<SheetData>();
+        var sheetData = ExcelPackage.RequireWorksheet(part).GetFirstChild<SheetData>();
 
         var cells = new List<object>();
         var truncated = false;
@@ -261,7 +290,7 @@ public sealed class ReadSheetTool : IKhzTool
                 break;
         }
 
-        var sheetNames = workbookPart.Workbook
+        var sheetNames = ExcelPackage.RequireWorkbook(workbookPart)
             .Descendants<Sheet>()
             .Select(sheet => sheet.Name?.Value)
             .Where(value => value is not null)
@@ -411,7 +440,7 @@ public sealed class WriteCellsTool : IKhzTool
                                    "The .xlsx package has no workbook part.");
 
             var (part, _) = ExcelPackage.OpenSheet(workbookPart, sheetName);
-            var worksheet = part.Worksheet;
+            var worksheet = ExcelPackage.RequireWorksheet(part);
             var sheetData = worksheet.GetFirstChild<SheetData>();
 
             if (sheetData is null)
@@ -468,7 +497,7 @@ public sealed class WriteCellsTool : IKhzTool
                 ExcelPackage.ForceRecalculation(workbookPart);
 
             worksheet.Save();
-            workbookPart.Workbook.Save();
+            ExcelPackage.RequireWorkbook(workbookPart).Save();
         });
 
         var json = ToolArgs.Serialize(new
