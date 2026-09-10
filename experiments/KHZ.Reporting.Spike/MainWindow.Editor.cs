@@ -5,6 +5,9 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Data.Sqlite;
+using TextBox = System.Windows.Controls.TextBox;
+using FontFamily = System.Windows.Media.FontFamily;
+using FontStyle = System.Windows.FontStyle;
 
 namespace KHZ.Reporting.Spike;
 
