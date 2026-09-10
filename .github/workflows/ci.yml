@@ -88,3 +88,41 @@ jobs:
           fi
           echo "SBOM_DRIFT=PASS"
           cp /tmp/regenerated.txt SBOM/source-files.sha256
+
+  g1-spreadsheet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install host (openpyxl for no-edit round-trip)
+        run: python -m pip install --no-build-isolation -e ".[automation]"
+      - name: Install LibreOffice (soffice) for engine round-trip
+        run: sudo apt-get update && sudo apt-get install -y libreoffice-calc
+      - name: G1 extract oracle pairs over corpus
+        run: |
+          set -euo pipefail
+          total=0
+          for f in acceptance/corpus/*.xlsx; do
+            echo "--- extract: $f ---"
+            out="acceptance/reports/oracle-pairs-$(basename "$f" .xlsx).csv"
+            n=$(python scripts/xlsx_oracle.py -Extract "$f" -OutCsv "$out" | grep '^ORACLE_PAIRS=' | cut -d= -f2 || true)
+            echo "ORACLE_PAIRS=$n"
+            total=$((total + ${n:-0}))
+          done
+          echo "ORACLE_PAIRS_AGGREGATE=$total"
+          test "$total" -gt 0
+      - name: G1 no-edit engine round-trip (soffice) - PRESERVE_UNKNOWN_XML
+        run: |
+          set -euo pipefail
+          status=0
+          for f in acceptance/corpus/*.xlsx; do
+            name="$(basename "$f")"
+            after="/tmp/rt-$name"
+            soffice --headless --norestore --nofirststartwizard --convert-to xlsx --outdir /tmp "$f" >/dev/null 2>&1
+            mv "/tmp/$name" "$after"
+            echo "--- round-trip: $f ---"
+            python scripts/xlsx_oracle.py -Before "$f" -After "$after" || status=1
+          done
+          test "$status" -eq 0

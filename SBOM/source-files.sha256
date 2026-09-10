@@ -1,4 +1,4 @@
-410ad7bfa654760b0d27b6695ac321e7328a7a08b75f60129d341d901c36aec4  ./.github/workflows/ci.yml
+ee1dd418f1421f074fa727195586112418d36ff5a094825f4bd3518a2f35d478  ./.github/workflows/ci.yml
 f1283d25cb9306af68d55f4cf2889451e0c2abf59abb9235bd0cf9d28d3d3296  ./.gitignore
 cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30  ./LICENSE
 fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85  ./LICENSES/MPL-2.0.txt
@@ -36,6 +36,8 @@ da2a7fa96ddbed4e2837bfacead8f81d23a7cec801d4bc3e67d8a7f33b26aa98  ./acceptance/r
 1e2ced60d2673f8d451145accecf0a9fa548b4a654d09b0fa1f805e790afdf90  ./acceptance/reports/office-roundtrip.json
 790d51d21eb2802f01384b8dcf654b179ae3e36d93fa09b071e9f9816bb73b82  ./acceptance/reports/office-roundtrip.stdout.txt
 a8cba599a0ef688aea5e3e8a4f281ca5a2dea6df0791caaf4af04145c0af3c0a  ./acceptance/reports/office-ui-capture.txt
+c38e8038df3570058cc703abaf2d1ea3a8610550ce74adab0933c29ba36b8b16  ./acceptance/reports/oracle-pairs-FormulaCompatibility.csv
+f5128c7c7a3d6ad05e6513befd7cae053d6c734f00dce8a7277e4459b2a6d0f6  ./acceptance/reports/oracle-pairs-InstitutionalWorkbook.csv
 3c9aff94fdb492c62319fdc44b336040a922b8c684edf4579339e39a9f9a4de2  ./acceptance/reports/pdf-export.json
 a99200f3bdebd15645934389dd3b6701da651334f203a018560ee33f3c263ed8  ./acceptance/reports/ui-capture.txt
 47f22d877961961f1e1b89cab2f4529d4b16de14796c6f433f3c97fabf169c3d  ./acceptance/reports/ui-smoke.txt
@@ -101,6 +103,8 @@ e8c20de75a7aa70acd1f17fe6fa6cf20c3f787acc9482348b7f75f6daab241f8  ./scripts/repo
 c71d33ee71d8ac66deee6dd892152bf42507b534ac991c9896c4a8751ef67d6e  ./scripts/run.cmd
 acaca14c61223c2c9ba3dff46d16263ea1e04a21177006099027a4b0bc0609a1  ./scripts/run.ps1
 0fe78bfdcf1aca009f594347d87c21afe39369bfe61bcd2ef33746530f516bcc  ./scripts/ui_smoke.py
+6304d35ee6b4e0fe277d06e0b54ba509fba33457cc9639d817927a4460382035  ./scripts/xlsx-oracle.ps1
+eecb98ef0f934d7ccfd630254170328022f8f0d6791293af30988e3b428540af  ./scripts/xlsx_oracle.py
 2bccc760b1f351aca8ba33eb9b80789e4c1300b0bc832d89c68595b85f982363  ./src/khz_workstation/__init__.py
 71837522fdbc7a090e37a24901d50f26ecbe0be17aa7c2af5a4ee962f3e986c1  ./src/khz_workstation/__main__.py
 f6fba887e4a807b676e2f77d306c335a3c8bb9d70aa0b6d09d9ffaa6729fc376  ./src/khz_workstation/ai/__init__.py
