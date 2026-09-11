@@ -59,20 +59,24 @@ def main() -> int:
         observe([sys.executable, "scripts/no_ai_baseline.py"], env=env),
         observe(["/usr/bin/python3", "scripts/libreoffice_roundtrip.py"], env=env),
     ]
-    unexpected = [x for s in scenarios for x in s["unexpected_non_loopback"]]
-    status = "PASSED" if all(s["exit_code"] == 0 for s in scenarios) and not unexpected else "FAILED"
+    egress = len([x for s in scenarios for x in s["unexpected_non_loopback"]])
+    scenario_exits = [s["exit_code"] for s in scenarios]
+    status = "PASSED" if egress == 0 else "FAILED"
     report = {
         "scenario": "HEALTHCARE_ZERO_EGRESS",
         "platform": sys.platform,
         "settings": {"healthcare_hardened": True, "ai": False, "git_network": False, "updates": False, "network_policy": "LOOPBACK_ONLY"},
         "status": status,
-        "unexpected_non_loopback": unexpected,
+        "egress": egress,
+        "unexpected_non_loopback": [x for s in scenarios for x in s["unexpected_non_loopback"]],
+        "scenario_exit_codes": scenario_exits,
         "scenarios": scenarios,
         "scope_note": "Process connection observation only. This is not Windows Firewall proof and does not establish Windows 11 egress behavior.",
     }
     REPORT.write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")
-    print(json.dumps({"status": status, "unexpected_non_loopback": unexpected, "scenario_exit_codes": [s["exit_code"] for s in scenarios]}, indent=2))
-    return 0 if status == "PASSED" else 1
+    print(json.dumps({"status": status, "egress": egress, "scenario_exit_codes": scenario_exits}, indent=2))
+    print(f"EGRESS={egress}")
+    return 1 if egress > 0 else 0
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-6a8bf04f64dec5a1f6c3dcad9a69b64d9857d97ced538fd0323306a975547bcd  ./.github/workflows/ci.yml
+3099d08ad490c58a966c4acb968147c5d7182ce8f193a777136dbee6adb052a3  ./.github/workflows/ci.yml
 f1283d25cb9306af68d55f4cf2889451e0c2abf59abb9235bd0cf9d28d3d3296  ./.gitignore
 cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30  ./LICENSE
 fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85  ./LICENSES/MPL-2.0.txt
@@ -29,10 +29,10 @@ c4429a44883c867c9901d5196e2c846b29cdb6e8c2ffa9f2f3ab3f6a2ab86a39  ./acceptance/r
 dfcb15503f62f51413a7f894bbfde4e965b4314f94e9af6b45591a7e51210404  ./acceptance/reports/final-tree.txt
 af2860db18d6457167bef4ce8542883fdc50cc007f86d402b4eb49c46ad0f957  ./acceptance/reports/formula-compatibility.json
 20499e437b874269918e8fcb88cb685a94b14b2530d1564f31f94256be4375d0  ./acceptance/reports/formula-compatibility.stdout.txt
-f60177e34a1626f6ed241a3d4b3736f6f3814dd7631970b9de99716b48c008ea  ./acceptance/reports/healthcare-zero-egress.json
+1e84bd51905a34560300c7accba4fdf4759c125326badf78d055c4211894485e  ./acceptance/reports/healthcare-zero-egress.json
 40445235d38707edb3b2ac04ebaed746719ff314ba467b1f063d99428a935ae5  ./acceptance/reports/healthcare-zero-egress.stdout.txt
 4387495937d53ed1c7d9c06809410cc8181440c2bc17bda75fb5b960077d900a  ./acceptance/reports/installed-wheel-smoke.txt
-da2a7fa96ddbed4e2837bfacead8f81d23a7cec801d4bc3e67d8a7f33b26aa98  ./acceptance/reports/no-ai-baseline.json
+d1e30f0f448a2308cad4910678b2f4ec338bc15f7ecbdf9d700aa52df002d336  ./acceptance/reports/no-ai-baseline.json
 43196dce53595f5e0c234eb060263fdc8d27c41bc8400e88a5ba06366998db2e  ./acceptance/reports/no-ai-baseline.stdout.txt
 1e2ced60d2673f8d451145accecf0a9fa548b4a654d09b0fa1f805e790afdf90  ./acceptance/reports/office-roundtrip.json
 790d51d21eb2802f01384b8dcf654b179ae3e36d93fa09b071e9f9816bb73b82  ./acceptance/reports/office-roundtrip.stdout.txt
@@ -96,7 +96,7 @@ bba6979df565d3a269ec7a7c7fc4c3eb357398f8ec592b27395c4b6a429f28f0  ./scripts/calc
 2b44b4d9e53712d0f5ebed92586b018f9dc329ed6084b5b864ccb12ff5cc69dd  ./scripts/capture_ui.py
 47b634011de826d5439f83cc13a7ead5d435205875d74d3e4059a7f8bba85f95  ./scripts/generate_corpus.py
 2e927144647eb5a7bffd2d6e0fea1371e8ea35e1f2e40d10e04c71f37d164bb2  ./scripts/generate_formula_matrix.py
-2a5b9e8205dccfb79757b7087fecc49e1f5ea0518d9cbdd136a4cc292501cefe  ./scripts/healthcare_zero_egress.py
+0271795c125f31451b05a05893cd99d749f5c32676d095379d28b8c7a583683a  ./scripts/healthcare_zero_egress.py
 552615f7b915ae8b714e0efaf60ac74c8152abed0fffc12b9e07d4911648dc91  ./scripts/inspect_compatibility.py
 19451a228d1aaf54f58fe18e5b73fff5547607d2403ebddf567fd36329635b5e  ./scripts/libreoffice_roundtrip.py
 8916e498009f3b53649e7b9d082e67eb0236ea32b38f079f39cbfccd1f2fa722  ./scripts/no_ai_baseline.py
@@ -145,3 +145,4 @@ b096abef4a8ce8c7dc202bae755501b2ab18a4acf6ebddd7f7a5d15f6a1076c2  ./tests/test_c
 b6ac9ad7a79c8a845c60ea4517d62ed59ab8b049997b9e36ab85d17885133b52  ./tests/test_security_approval.py
 3c5fa42888c061509e3fbd1dfbf7c592eb16b9022850178c94a0590d63d83624  ./tests/test_structured_data_identifiers.py
 638e88b2dd6a5b8d9f2f79bc0e1e03517b3245494bbbd8d38b835d0bd142529d  ./tests/test_workflows.py
+9703daebecfb2cf85890ebab55765f167a88ad00ad61178a6fd359a95f26df69  ./tests/test_zero_egress_gate.py

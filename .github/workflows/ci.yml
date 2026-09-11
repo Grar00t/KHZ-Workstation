@@ -172,3 +172,20 @@ jobs:
           print(f"GATE_PROVENANCE={'PASS' if gate else 'FAIL'}")
           sys.exit(0 if gate else 1)
           PY
+
+  zero-egress:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install host + psutil for egress observation
+        run: python -m pip install --no-build-isolation -e ".[automation]" && python -m pip install "psutil==7.2.2"
+      - name: I5 Zero-egress hard gate
+        run: |
+          set -euo pipefail
+          PYTHONPATH=src python scripts/healthcare_zero_egress.py | tee /tmp/egress.out
+          egress=$(grep '^EGRESS=' /tmp/egress.out | cut -d= -f2)
+          echo "EGRESS=$egress"
+          test "${egress:-1}" -eq 0
