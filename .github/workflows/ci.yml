@@ -26,10 +26,20 @@ jobs:
         run: python -m pip install --no-build-isolation -e ".[automation]"
       - name: Compile
         run: python -m compileall -q src tests scripts
-      - name: Tests
+      - name: Tests (pytest)
         env:
           PYTHONPATH: src
-        run: python -W error::ResourceWarning -m unittest discover -s tests -v
+        run: |
+          set -euo pipefail
+          python -m pytest tests -v 2>&1 | tee /tmp/pytest.out
+          summary=$(grep -E 'passed' /tmp/pytest.out | tail -1)
+          echo "PYTEST_SUMMARY=$summary"
+          passed=$(echo "$summary" | grep -oE '[0-9]+ passed' | head -1 | grep -oE '^[0-9]+' || echo 0)
+          failed=$(echo "$summary" | grep -oE '[0-9]+ failed' | head -1 | grep -oE '^[0-9]+' || echo 0)
+          echo "PASSED=$passed"
+          echo "FAILED=$failed"
+          test "$passed" -gt 0
+          test "$failed" -eq 0
       - name: NO_AI_BASELINE
         env:
           PYTHONPATH: src
@@ -44,8 +54,28 @@ jobs:
           dotnet-version: '9.0.x'
       - name: Restore Windows app
         run: dotnet restore windows/KHZ.Workstation.sln
-      - name: Build Windows app
-        run: dotnet build windows/KHZ.Workstation.sln -c Release --no-restore
+      - name: Build Windows app (0 warnings gate)
+        run: |
+          dotnet build windows/KHZ.Workstation.sln -c Release --no-restore 2>&1 | tee build.log
+          $warnings = (Select-String -Path build.log -Pattern '^\s*(\d+)\s+Warning\(s\)' -AllMatches | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -Last 1)
+          $errors   = (Select-String -Path build.log -Pattern '^\s*(\d+)\s+Error\(s\)'   -AllMatches | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -Last 1)
+          $warnings = if ($warnings) { [int]$warnings } else { 0 }
+          $errors   = if ($errors)   { [int]$errors }   else { 0 }
+          Write-Host "BUILD_WARNINGS=$warnings"
+          Write-Host "BUILD_ERRORS=$errors"
+          if ($warnings -ne 0 -or $errors -ne 0) { exit 1 }
+        shell: pwsh
+      - name: C# null-input tests (G3)
+        run: |
+          dotnet test windows/KHZ.Workstation.sln -c Release --no-build --verbosity normal 2>&1 | tee test.log
+          $passed = (Select-String -Path test.log -Pattern 'Passed:\s+(\d+)'   | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -Last 1)
+          $failed = (Select-String -Path test.log -Pattern 'Failed:\s+(\d+)'   | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -Last 1)
+          $passed = if ($passed) { [int]$passed } else { 0 }
+          $failed = if ($failed) { [int]$failed } else { 0 }
+          Write-Host "CS_PASSED=$passed"
+          Write-Host "CS_FAILED=$failed"
+          if ($passed -eq 0 -or $failed -ne 0) { exit 1 }
+        shell: pwsh
 
   sbom:
     runs-on: ubuntu-latest
