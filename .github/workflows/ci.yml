@@ -189,3 +189,24 @@ jobs:
           egress=$(grep '^EGRESS=' /tmp/egress.out | cut -d= -f2)
           echo "EGRESS=$egress"
           test "${egress:-1}" -eq 0
+
+  g7-nfc-bidi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install host
+        run: python -m pip install --no-build-isolation -e ".[automation]"
+      - name: G7 NFC-at-boundary + explicit collation audit
+        run: |
+          set -euo pipefail
+          PYTHONPATH=src python -m pytest tests/test_g7_nfc_bidi_audit.py -v
+          echo "=== NFC boundary sites ==="
+          grep -rn 'unicodedata.normalize("NFC"' src/khz_workstation/data_service.py src/khz_workstation/search.py src/khz_workstation/security/approval.py || true
+          echo "=== ORDER BY collation ==="
+          grep -rn 'ORDER BY' src/khz_workstation/store.py
+          uncollated=$(grep -rn 'ORDER BY' src/khz_workstation/store.py | grep -vc 'COLLATE' || true)
+          echo "ORDER_BY_WITHOUT_COLLATE=$uncollated"
+          test "$uncollated" -eq 0
