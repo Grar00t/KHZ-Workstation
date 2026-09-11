@@ -126,3 +126,49 @@ jobs:
             python scripts/xlsx_oracle.py -Before "$f" -After "$after" || status=1
           done
           test "$status" -eq 0
+
+  corpus-provenance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: G4 corpus provenance verification
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import csv, hashlib, os, sys
+          prov = "acceptance/corpus-provenance.csv"
+          if not os.path.isfile(prov):
+              print("MISSING: corpus-provenance.csv"); sys.exit(1)
+          rows = []
+          with open(prov, newline="", encoding="utf-8") as fh:
+              r = csv.reader(fh)
+              header = next(r)
+              for row in r: rows.append(row)
+          corpus = sorted(f for f in os.listdir("acceptance/corpus") if os.path.isfile(f"acceptance/corpus/{f}"))
+          prov_files = sorted(p.split("/")[-1] for p in (row[0] for row in rows))
+          missing = sorted(set(corpus) - set(prov_files))
+          extra = sorted(set(prov_files) - set(corpus))
+          empty = sum(1 for row in rows for v in row if v == "")
+          sha_ok = sha_bad = 0
+          for row in rows:
+              p = row[0]
+              if int(row[4]) != os.path.getsize(p):
+                  sha_bad += 1; print(f"SIZE_MISMATCH {p}")
+              if hashlib.sha256(open(p, "rb").read()).hexdigest() == row[3]:
+                  sha_ok += 1
+              else:
+                  sha_bad += 1; print(f"SHA_MISMATCH {p}")
+          print(f"CORPUS_FILES={len(corpus)}")
+          print(f"PROV_ROWS={len(rows)}")
+          print(f"MISSING={len(missing)} {missing if missing else ''}")
+          print(f"EXTRA={len(extra)} {extra if extra else ''}")
+          print(f"EMPTY_FIELDS={empty}")
+          print(f"SHA_OK={sha_ok}")
+          print(f"SHA_BAD={sha_bad}")
+          gate = (len(rows)==len(corpus) and not missing and not extra and empty==0 and sha_bad==0)
+          print(f"GATE_PROVENANCE={'PASS' if gate else 'FAIL'}")
+          sys.exit(0 if gate else 1)
+          PY

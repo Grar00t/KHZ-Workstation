@@ -1,0 +1,7 @@
+path,source_url,licence,sha256,bytes,retrieved_at_utc,lang
+acceptance/corpus/FormulaCompatibility.xlsx,https://github.com/Grar00t/KHZ-Workstation/blob/HEAD/scripts/generate_corpus.py,Apache-2.0,71997dadde6f53aef1b6f0bf0e6277a158027e702955ccdf18e1c16009b56b22,7919,2026-08-31T16:29:00Z,xlsx-formula
+acceptance/corpus/InstitutionalPacket.pdf,https://github.com/Grar00t/KHZ-Workstation/blob/HEAD/scripts/generate_corpus.py,Apache-2.0,3140562c68ec35a3006deb5006a9fa77027ee99a73dfdd30c7ef88d2fb98b559,3986,2026-08-31T16:29:00Z,pdf-institutional
+acceptance/corpus/InstitutionalPresentation.pptx,https://github.com/Grar00t/KHZ-Workstation/blob/HEAD/scripts/generate_corpus.py,Apache-2.0,74570de63dad136bae05033c1822601aadbe2a6166b012e3fa1d4dfedad09cfe,51042,2026-08-31T16:29:00Z,pptx-institutional
+acceptance/corpus/InstitutionalReport.docx,https://github.com/Grar00t/KHZ-Workstation/blob/HEAD/scripts/generate_corpus.py,Apache-2.0,1ae8dec9f244785b856da17bb21005a51391d2ccca53e8af51fd8d0e6fb0a237,41125,2026-08-31T16:29:00Z,docx-institutional
+acceptance/corpus/InstitutionalWorkbook.xlsx,https://github.com/Grar00t/KHZ-Workstation/blob/HEAD/scripts/generate_corpus.py,Apache-2.0,36e2604eec78087576136bcef371faff62da8feea94129fa968b65e899577cb0,148433,2026-08-31T16:29:00Z,xlsx-institutional
+acceptance/corpus/synthetic-image.png,https://github.com/Grar00t/KHZ-Workstation/blob/HEAD/scripts/generate_corpus.py,Apache-2.0,39b14dc0da279063e97b869ac14adf9e4817e77b7f4179c4b804eaa3a5a6e7ed,2636,2026-08-31T16:29:00Z,png-fixture

@@ -1,4 +1,4 @@
-ee1dd418f1421f074fa727195586112418d36ff5a094825f4bd3518a2f35d478  ./.github/workflows/ci.yml
+6a8bf04f64dec5a1f6c3dcad9a69b64d9857d97ced538fd0323306a975547bcd  ./.github/workflows/ci.yml
 f1283d25cb9306af68d55f4cf2889451e0c2abf59abb9235bd0cf9d28d3d3296  ./.gitignore
 cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30  ./LICENSE
 fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85  ./LICENSES/MPL-2.0.txt
@@ -12,6 +12,7 @@ ef831761646313921375fc2cb888e8eeaf7da213d0b92852c10c42f3a0b4d138  ./LICENSES/rep
 1f518379f85ae3b1d4993933574c0e520d2d1e9432402d2f7d6de1257f8bbbe4  ./README.md
 2a07fba8cc57c92a7ec8cf24ee1ffd75c011bccbf87bd8df8dce2ec2804bc759  ./SBOM/spdx.json
 b4bddeec6e288cdcb4d46a134025f793c9d884ebe0ea905b18db2efe077ce9bb  ./THIRD-PARTY-NOTICES.md
+f3a074d65ad3fb2173f30b094e54360aff723b0058ff77ecc94178badb4518f4  ./acceptance/corpus-provenance.csv
 71997dadde6f53aef1b6f0bf0e6277a158027e702955ccdf18e1c16009b56b22  ./acceptance/corpus/FormulaCompatibility.xlsx
 3140562c68ec35a3006deb5006a9fa77027ee99a73dfdd30c7ef88d2fb98b559  ./acceptance/corpus/InstitutionalPacket.pdf
 74570de63dad136bae05033c1822601aadbe2a6166b012e3fa1d4dfedad09cfe  ./acceptance/corpus/InstitutionalPresentation.pptx
