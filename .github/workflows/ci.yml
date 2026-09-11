@@ -210,3 +210,27 @@ jobs:
           uncollated=$(grep -rn 'ORDER BY' src/khz_workstation/store.py | grep -vc 'COLLATE' || true)
           echo "ORDER_BY_WITHOUT_COLLATE=$uncollated"
           test "$uncollated" -eq 0
+
+  g8-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: G8 UI accessibility audit
+        run: |
+          set -euo pipefail
+          python scripts/g8_ui_audit.py | tee /tmp/g8.out
+          echo "=== gate-deciding lines ==="
+          grep -E '^(GATE_CONTRAST|GATE_KEYBOARD|GATE_NO_TEXT_IN_IMAGES|GATE_G8)=' /tmp/g8.out
+          body=$(grep -E '^BODY_BELOW_4_5=' /tmp/g8.out | cut -d= -f2)
+          large=$(grep -E '^LARGE_BELOW_3_0=' /tmp/g8.out | cut -d= -f2)
+          tabstop=$(grep -E '^IS_TABSTOP_FALSE=' /tmp/g8.out | cut -d= -f2)
+          echo "BODY_BELOW_4_5=$body LARGE_BELOW_3_0=$large IS_TABSTOP_FALSE=$tabstop"
+          test "$body" -eq 0
+          test "$large" -eq 0
+          test "$tabstop" -eq 0
+          test "$(grep -E '^GATE_G8=' /tmp/g8.out | cut -d= -f2)" = "PASS"
+      - name: G8 test
+        run: python -m pytest tests/test_g8_ui_audit.py -v

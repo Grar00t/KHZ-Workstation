@@ -22,7 +22,7 @@
 
                     <TextBlock Text="Runtime boundaries and local trust state"
                                FontSize="11"
-                               Foreground="#777777"
+                               Foreground="#595959"
                                Margin="0,4,0,0"/>
 
                     <TextBlock x:Name="SecurityErrorText"
@@ -43,7 +43,7 @@
             <TextBlock Text="LOCAL STATE"
                        FontSize="10"
                        FontWeight="SemiBold"
-                       Foreground="#777777"
+                       Foreground="#595959"
                        Margin="0,28,0,9"/>
 
             <Border Background="White"
@@ -66,7 +66,7 @@
                     </Grid.RowDefinitions>
 
                     <TextBlock Text="Database provider"
-                               Foreground="#777777"
+                               Foreground="#595959"
                                VerticalAlignment="Center"/>
 
                     <TextBlock Grid.Column="1"
@@ -76,7 +76,7 @@
 
                     <TextBlock Grid.Row="1"
                                Text="Integrity"
-                               Foreground="#777777"
+                               Foreground="#595959"
                                VerticalAlignment="Center"/>
 
                     <TextBlock x:Name="SecurityIntegrityText"
@@ -88,7 +88,7 @@
 
                     <TextBlock Grid.Row="2"
                                Text="Database path"
-                               Foreground="#777777"
+                               Foreground="#595959"
                                Margin="0,8,0,0"/>
 
                     <TextBlock x:Name="SecurityDatabasePathText"
@@ -105,7 +105,7 @@
             <TextBlock Text="CAPABILITY POLICY"
                        FontSize="10"
                        FontWeight="SemiBold"
-                       Foreground="#777777"
+                       Foreground="#595959"
                        Margin="0,24,0,9"/>
 
             <Border Background="White"

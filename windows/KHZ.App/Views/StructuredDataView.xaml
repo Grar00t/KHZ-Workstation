@@ -119,7 +119,7 @@
                                        Grid.Column="1"
                                        VerticalAlignment="Center"
                                        FontSize="10"
-                                       Foreground="#888888"
+                                       Foreground="#595959"
                                        Text="0"/>
                         </Grid>
                     </Border>
@@ -187,7 +187,7 @@
                                        Grid.Column="1"
                                        VerticalAlignment="Center"
                                        FontSize="10"
-                                       Foreground="#888888"/>
+                                       Foreground="#595959"/>
                         </Grid>
                     </Border>
 

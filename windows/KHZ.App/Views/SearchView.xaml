@@ -24,7 +24,7 @@
 
             <TextBlock x:Name="RootPathText"
                        FontSize="10"
-                       Foreground="#888888"
+                       Foreground="#595959"
                        TextWrapping="Wrap"/>
         </StackPanel>
 
@@ -71,7 +71,7 @@
                            Text="FILES"
                            FontSize="10"
                            FontWeight="SemiBold"
-                           Foreground="#777777"
+                           Foreground="#595959"
                            Margin="0,0,0,8"/>
 
                 <Border Background="White"
@@ -109,7 +109,7 @@
                            Text="ACTIVITY"
                            FontSize="10"
                            FontWeight="SemiBold"
-                           Foreground="#777777"
+                           Foreground="#595959"
                            Margin="0,0,0,8"/>
 
                 <Border Background="White"
