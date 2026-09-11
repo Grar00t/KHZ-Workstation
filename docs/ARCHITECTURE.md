@@ -82,3 +82,17 @@ Repository claims are evidence-scoped:
 - CI compilation/test success proves the checked-in code builds/tests in the configured runners.
 - runtime behavior is only called verified after the relevant executable path is exercised.
 - a model's fluent answer is never treated as verification of tool execution, model identity, or filesystem state.
+
+The repository carries a measured verification layer (`.github/workflows/ci.yml`), with a zero-dependency oracle per gate:
+
+| Gate | Oracle | Measured number |
+| --- | --- | --- |
+| G1 Spreadsheet/OOXML | `scripts/xlsx_oracle.py` | `ORACLE_PAIRS_AGGREGATE`, `PRESERVE_UNKNOWN_XML` |
+| G2 Python core | `pytest` | `PASSED` / `FAILED` |
+| G3 C# / systems | `dotnet build` / `dotnet test` | `BUILD_WARNINGS`, `CS_PASSED` / `CS_FAILED` |
+| G4 Dataset / corpus | `SBOM/source-files.sha256`, `acceptance/corpus-provenance.csv` | `SBOM_DRIFT`, `GATE_PROVENANCE` |
+| G7 Arabic / bidi | NFC-at-boundary + `COLLATE` audit | `ORDER_BY_WITHOUT_COLLATE` |
+| G8 UI / layout | `scripts/g8_ui_audit.py` | `GATE_G8` (contrast / keyboard / no text in images) |
+| I5 Zero-egress | `scripts/healthcare_zero_egress.py` | `EGRESS` |
+
+Every gate prints a measured number and derives its exit code from that number.
