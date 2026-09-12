@@ -15,7 +15,7 @@ c4429a44883c867c9901d5196e2c846b29cdb6e8c2ffa9f2f3ab3f6a2ab86a39  ./acceptance/r
 dfcb15503f62f51413a7f894bbfde4e965b4314f94e9af6b45591a7e51210404  ./acceptance/reports/final-tree.txt
 af2860db18d6457167bef4ce8542883fdc50cc007f86d402b4eb49c46ad0f957  ./acceptance/reports/formula-compatibility.json
 20499e437b874269918e8fcb88cb685a94b14b2530d1564f31f94256be4375d0  ./acceptance/reports/formula-compatibility.stdout.txt
-f6ff0acd9a82387e6c6b0f801e88c9dc6052face0201f1518f73b7b1f5804f84  ./acceptance/reports/healthcare-zero-egress.json
+87918f1b4d95f17c8ec71f83c91d5e02b8bf0498aa7386f41e0e36a919b26407  ./acceptance/reports/healthcare-zero-egress.json
 40445235d38707edb3b2ac04ebaed746719ff314ba467b1f063d99428a935ae5  ./acceptance/reports/healthcare-zero-egress.stdout.txt
 4387495937d53ed1c7d9c06809410cc8181440c2bc17bda75fb5b960077d900a  ./acceptance/reports/installed-wheel-smoke.txt
 d1e30f0f448a2308cad4910678b2f4ec338bc15f7ecbdf9d700aa52df002d336  ./acceptance/reports/no-ai-baseline.json

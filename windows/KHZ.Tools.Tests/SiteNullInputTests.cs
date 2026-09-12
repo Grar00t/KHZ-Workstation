@@ -27,11 +27,13 @@ namespace KHZ.Tools.Tests;
 public sealed class SiteNullInputTests : IDisposable
 {
     private readonly List<string> _tempFiles = new();
+    private readonly List<OpenXmlPackage> _packages = new();
 
     private string TempPath(string name)
     {
-        var path = Path.Combine(Path.GetTempPath(), name);
-        if (File.Exists(path)) File.Delete(path);
+        var stem = Path.GetFileNameWithoutExtension(name);
+        var ext = Path.GetExtension(name);
+        var path = Path.Combine(Path.GetTempPath(), $"{stem}_{Guid.NewGuid():N}{ext}");
         _tempFiles.Add(path);
         return path;
     }
@@ -41,6 +43,7 @@ public sealed class SiteNullInputTests : IDisposable
     private WorkbookPart WorkbookPartWithRoot()
     {
         var d = SpreadsheetDocument.Create(TempPath("wb_valid.xlsx"), SpreadsheetDocumentType.Workbook);
+        _packages.Add(d);
         var wb = d.AddWorkbookPart();
         wb.Workbook = new Workbook();
         var ws = wb.AddNewPart<WorksheetPart>();
@@ -51,6 +54,7 @@ public sealed class SiteNullInputTests : IDisposable
     private WorkbookPart WorkbookPartWithoutRoot()
     {
         var d = SpreadsheetDocument.Create(TempPath("wb_empty.xlsx"), SpreadsheetDocumentType.Workbook);
+        _packages.Add(d);
         return d.AddWorkbookPart(); // Workbook intentionally left null
     }
 
@@ -65,6 +69,7 @@ public sealed class SiteNullInputTests : IDisposable
     private SlidePart SlidePartWithRoot()
     {
         var d = PresentationDocument.Create(TempPath("sl_valid.pptx"), PresentationDocumentType.Presentation);
+        _packages.Add(d);
         var sp = d.AddPresentationPart().AddNewPart<SlidePart>();
         sp.Slide = new Slide(new CommonSlideData(new ShapeTree()));
         return sp;
@@ -73,11 +78,16 @@ public sealed class SiteNullInputTests : IDisposable
     private SlidePart SlidePartWithoutRoot()
     {
         var d = PresentationDocument.Create(TempPath("sl_empty.pptx"), PresentationDocumentType.Presentation);
+        _packages.Add(d);
         return d.AddPresentationPart().AddNewPart<SlidePart>(); // Slide left null
     }
 
     public void Dispose()
     {
+        foreach (var pkg in _packages)
+        {
+            try { pkg.Dispose(); } catch { }
+        }
         foreach (var path in _tempFiles)
         {
             try { if (File.Exists(path)) File.Delete(path); } catch { }
