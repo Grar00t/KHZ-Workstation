@@ -106,6 +106,7 @@ class DataServiceCoverageTests(unittest.TestCase):
             from openpyxl import load_workbook
             reread = load_workbook(dest, read_only=True, data_only=True)
             self.assertEqual(reread.active["B1"].value, "Name")
+            reread.close()
 
     def test_import_xlsx_named_sheet(self):
         with tempfile.TemporaryDirectory() as td:

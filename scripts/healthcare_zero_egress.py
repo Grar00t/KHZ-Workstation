@@ -57,7 +57,7 @@ def main() -> int:
     env = os.environ.copy(); env["PYTHONPATH"] = str(ROOT / "src")
     scenarios = [
         observe([sys.executable, "scripts/no_ai_baseline.py"], env=env),
-        observe(["/usr/bin/python3", "scripts/libreoffice_roundtrip.py"], env=env),
+        observe([sys.executable, "scripts/libreoffice_roundtrip.py"], env=env),
     ]
     egress = len([x for s in scenarios for x in s["unexpected_non_loopback"]])
     scenario_exits = [s["exit_code"] for s in scenarios]
