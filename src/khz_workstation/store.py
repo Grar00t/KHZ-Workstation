@@ -119,8 +119,8 @@ class WorkspaceStore:
     def list_items(self, kind: str | None = None) -> list[sqlite3.Row]:
         with self.connection() as con:
             if kind:
-                return con.execute("SELECT * FROM items WHERE workspace_id=? AND kind=? ORDER BY relative_path", (self.workspace_id, kind)).fetchall()
-            return con.execute("SELECT * FROM items WHERE workspace_id=? ORDER BY relative_path", (self.workspace_id,)).fetchall()
+                return con.execute("SELECT * FROM items WHERE workspace_id=? AND kind=? ORDER BY relative_path COLLATE NOCASE", (self.workspace_id, kind)).fetchall()
+            return con.execute("SELECT * FROM items WHERE workspace_id=? ORDER BY relative_path COLLATE NOCASE", (self.workspace_id,)).fetchall()
 
     def create_data_table(self, name: str, columns: list[tuple[str, str]]) -> str:
         if not _IDENT.match(name):
@@ -173,7 +173,7 @@ class WorkspaceStore:
 
     def list_data_tables(self) -> list[sqlite3.Row]:
         with self.connection() as con:
-            return con.execute("SELECT * FROM data_catalog WHERE workspace_id=? ORDER BY name", (self.workspace_id,)).fetchall()
+            return con.execute("SELECT * FROM data_catalog WHERE workspace_id=? ORDER BY name COLLATE NOCASE", (self.workspace_id,)).fetchall()
 
     def add_data_row(self, table_id: str, values: dict[str, object]) -> str:
         with self.transaction() as con:
@@ -213,7 +213,7 @@ class WorkspaceStore:
                     params.append(value)
                 sql += " WHERE " + " AND ".join(clauses)
             if sort_by:
-                sql += f' ORDER BY "{sort_by}" {"DESC" if descending else "ASC"}'
+                sql += f' ORDER BY "{sort_by}" COLLATE NOCASE {"DESC" if descending else "ASC"}'
             sql += " LIMIT ?"
             params.append(limit)
             rows = con.execute(sql, params).fetchall()

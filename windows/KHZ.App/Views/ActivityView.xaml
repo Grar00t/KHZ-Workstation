@@ -25,7 +25,7 @@
                 <TextBlock x:Name="ActivityCountText"
                            Text="Local execution history"
                            FontSize="11"
-                           Foreground="#777777"
+                           Foreground="#595959"
                            Margin="0,4,0,0"/>
 
                 <TextBlock x:Name="ActivityErrorText"

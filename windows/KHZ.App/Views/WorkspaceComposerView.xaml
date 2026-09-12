@@ -56,7 +56,7 @@
         <TextBlock Text="WORKSPACE"
                    FontSize="10"
                    FontWeight="SemiBold"
-                   Foreground="#777777"
+                   Foreground="#595959"
                    Margin="0,0,0,10"/>
 
         <WrapPanel HorizontalAlignment="Left">
@@ -211,7 +211,7 @@
         <TextBlock Text="OFFICE"
                    FontSize="10"
                    FontWeight="SemiBold"
-                   Foreground="#777777"
+                   Foreground="#595959"
                    Margin="0,16,0,10"/>
 
         <WrapPanel HorizontalAlignment="Left">
@@ -303,7 +303,7 @@
         <TextBlock Text="OPERATIONS"
                    FontSize="10"
                    FontWeight="SemiBold"
-                   Foreground="#777777"
+                   Foreground="#595959"
                    Margin="0,16,0,10"/>
 
         <WrapPanel HorizontalAlignment="Left">
@@ -368,7 +368,7 @@
                 <TextBlock Text="COMPOSER CONTRACT"
                            FontSize="10"
                            FontWeight="SemiBold"
-                           Foreground="#777777"/>
+                           Foreground="#595959"/>
                 <TextBlock Margin="0,7,0,0"
                            FontSize="12"
                            Foreground="#555555"
