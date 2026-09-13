@@ -7,7 +7,8 @@
         MinWidth="900"
         MinHeight="500"
         WindowStartupLocation="CenterOwner"
-        Background="#F3F3F3">
+        Background="{DynamicResource AppBackgroundBrush}"
+        Foreground="{DynamicResource TextBrush}">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -16,8 +17,8 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Border Background="#FFFFFF"
-                BorderBrush="#D8D8D8"
+        <Border Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1"
                 Padding="8">
             <DockPanel>
@@ -28,7 +29,7 @@
                 <TextBlock x:Name="HeaderText"
                            Margin="14,0,0,0"
                            VerticalAlignment="Center"
-                           Foreground="#555555"/>
+                           Foreground="{DynamicResource MutedTextBrush}"/>
             </DockPanel>
         </Border>
 
@@ -44,17 +45,19 @@
                   EnableRowVirtualization="True"
                   SelectionMode="Extended"
                   GridLinesVisibility="All"
-                  AlternatingRowBackground="#FAFAFA"
-                  Background="#FFFFFF"
+                  AlternatingRowBackground="{DynamicResource SurfaceAltBrush}"
+                  Background="{DynamicResource SurfaceBrush}"
+                  Foreground="{DynamicResource TextBrush}"
+                  BorderBrush="{DynamicResource BorderBrush}"
                   BorderThickness="0"/>
 
         <Border Grid.Row="2"
-                Background="#FFFFFF"
-                BorderBrush="#D8D8D8"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,1,0,0"
                 Padding="8,5">
             <TextBlock x:Name="StatusText"
-                       Foreground="#555555"/>
+                       Foreground="{DynamicResource MutedTextBrush}"/>
         </Border>
     </Grid>
 </Window>
