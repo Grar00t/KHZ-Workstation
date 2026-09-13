@@ -1,0 +1,229 @@
+<Window x:Class="KHZ.AssetRegister.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="KHZ Asset Register"
+        Width="1600"
+        Height="900"
+        MinWidth="1100"
+        MinHeight="650"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource AppBackgroundBrush}"
+        Foreground="{DynamicResource TextBrush}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="8">
+            <DockPanel LastChildFill="False">
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                    <Button Content="New Row" Click="NewRow_Click"/>
+                    <Button Content="Save Changes" Click="Save_Click"/>
+                    <Button Content="Delete Selected" Click="DeleteSelected_Click"/>
+                    <Button Content="Reload" Click="Reload_Click"/>
+                    <Button Content="Open Excel" Click="OpenExcel_Click"/>
+                    <Button Content="Export XLSX" Click="ExportXlsx_Click"/>
+                    <Button Content="Export CSV" Click="ExportCsv_Click"/>
+                    <Button Content="Audit Log" Click="AuditLog_Click"/>
+                    <Button Content="Backup DB" Click="Backup_Click"/>
+                    <Button Content="DB Check" Click="Integrity_Click"/>
+                    <Button Content="Data Folder" Click="DataFolder_Click"/>
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Right"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="Theme"
+                               Margin="12,0,7,0"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource MutedTextBrush}"/>
+                    <ComboBox x:Name="ThemeComboBox"
+                              Width="105"
+                              Margin="0,0,12,0"
+                              SelectionChanged="ThemeComboBox_SelectionChanged">
+                        <ComboBoxItem Content="System"/>
+                        <ComboBoxItem Content="Light"/>
+                        <ComboBoxItem Content="Dark"/>
+                        <ComboBoxItem Content="Blue"/>
+                        <ComboBoxItem Content="Green"/>
+                    </ComboBox>
+
+                    <TextBlock x:Name="ModeText"
+                               Margin="4,0,4,0"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource MutedTextBrush}"
+                               FontSize="11"
+                               Text="LOCAL · SQLITE · OFFLINE"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Border Grid.Row="1"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="8,6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="360"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="Search"
+                           VerticalAlignment="Center"
+                           Margin="0,0,8,0"
+                           Foreground="{DynamicResource TextBrush}"/>
+
+                <TextBox x:Name="SearchBox"
+                         Grid.Column="1"
+                         TextChanged="SearchBox_TextChanged"/>
+
+                <TextBlock x:Name="DatabasePathText"
+                           Grid.Column="2"
+                           Margin="16,0,0,0"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource MutedTextBrush}"
+                           TextTrimming="CharacterEllipsis"/>
+
+                <TextBlock x:Name="CountText"
+                           Grid.Column="3"
+                           Margin="18,0,4,0"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </Grid>
+        </Border>
+
+        <DataGrid x:Name="AssetsGrid"
+                  Grid.Row="2"
+                  Margin="0"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  CanUserReorderColumns="True"
+                  CanUserResizeColumns="True"
+                  CanUserSortColumns="True"
+                  EnableRowVirtualization="True"
+                  EnableColumnVirtualization="True"
+                  GridLinesVisibility="All"
+                  HeadersVisibility="All"
+                  SelectionMode="Extended"
+                  SelectionUnit="FullRow"
+                  ClipboardCopyMode="IncludeHeader"
+                  FrozenColumnCount="2"
+                  RowHeaderWidth="36"
+                  RowHeight="25"
+                  AlternatingRowBackground="{DynamicResource SurfaceAltBrush}"
+                  Background="{DynamicResource SurfaceBrush}"
+                  Foreground="{DynamicResource TextBrush}"
+                  BorderBrush="{DynamicResource BorderBrush}"
+                  BorderThickness="0">
+
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="AssetId"
+                                    Width="72"
+                                    IsReadOnly="True"
+                                    Binding="{Binding AssetId}"/>
+
+                <DataGridTextColumn Header="AssetTag"
+                                    Width="120"
+                                    Binding="{Binding AssetTag, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <DataGridTextColumn Header="SerialNumber"
+                                    Width="130"
+                                    Binding="{Binding SerialNumber, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <DataGridTextColumn Header="Barcode"
+                                    Width="120"
+                                    Binding="{Binding Barcode, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <DataGridTextColumn Header="Category"
+                                    Width="110"
+                                    Binding="{Binding Category, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <DataGridTextColumn Header="Description"
+                                    Width="220"
+                                    Binding="{Binding Description, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <DataGridTextColumn Header="Manufacturer"
+                                    Width="130"
+                                    Binding="{Binding Manufacturer, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <DataGridTextColumn Header="Model"
+                                    Width="120"
+                                    Binding="{Binding Model, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <DataGridTextColumn Header="Location"
+                                    Width="130"
+                                    Binding="{Binding Location, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <DataGridTextColumn Header="Department"
+                                    Width="130"
+                                    Binding="{Binding Department, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <DataGridTextColumn Header="Custodian"
+                                    Width="140"
+                                    Binding="{Binding Custodian, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <DataGridTextColumn Header="Status"
+                                    Width="110"
+                                    Binding="{Binding Status, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <DataGridTextColumn Header="PurchaseDate"
+                                    Width="110"
+                                    Binding="{Binding PurchaseDate, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <DataGridTextColumn Header="PurchaseCost"
+                                    Width="110"
+                                    Binding="{Binding PurchaseCost, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <DataGridTextColumn Header="WarrantyExpiry"
+                                    Width="120"
+                                    Binding="{Binding WarrantyExpiry, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <DataGridTextColumn Header="Condition"
+                                    Width="100"
+                                    Binding="{Binding Condition, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <DataGridTextColumn Header="Notes"
+                                    Width="260"
+                                    Binding="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <DataGridTextColumn Header="CreatedAt"
+                                    Width="175"
+                                    IsReadOnly="True"
+                                    Binding="{Binding CreatedAt}"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <Border Grid.Row="3"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="8,5">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock x:Name="StatusText"
+                           Foreground="{DynamicResource TextBrush}"
+                           Text="Ready"/>
+
+                <TextBlock x:Name="DirtyText"
+                           Grid.Column="1"
+                           Foreground="{DynamicResource DirtyBrush}"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
