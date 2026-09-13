@@ -7,7 +7,8 @@
         MinWidth="1100"
         MinHeight="650"
         WindowStartupLocation="CenterScreen"
-        Background="#F3F3F3">
+        Background="{DynamicResource AppBackgroundBrush}"
+        Foreground="{DynamicResource TextBrush}">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -18,8 +19,8 @@
         </Grid.RowDefinitions>
 
         <Border Grid.Row="0"
-                Background="#FFFFFF"
-                BorderBrush="#D8D8D8"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1"
                 Padding="8">
             <DockPanel LastChildFill="False">
@@ -28,6 +29,7 @@
                     <Button Content="Save Changes" Click="Save_Click"/>
                     <Button Content="Delete Selected" Click="DeleteSelected_Click"/>
                     <Button Content="Reload" Click="Reload_Click"/>
+                    <Button Content="Open Excel" Click="OpenExcel_Click"/>
                     <Button Content="Export XLSX" Click="ExportXlsx_Click"/>
                     <Button Content="Export CSV" Click="ExportCsv_Click"/>
                     <Button Content="Audit Log" Click="AuditLog_Click"/>
@@ -36,19 +38,37 @@
                     <Button Content="Data Folder" Click="DataFolder_Click"/>
                 </StackPanel>
 
-                <TextBlock x:Name="ModeText"
-                           DockPanel.Dock="Right"
-                           Margin="16,0,4,0"
-                           VerticalAlignment="Center"
-                           Foreground="#606060"
-                           FontSize="11"
-                           Text="LOCAL · SQLITE · OFFLINE"/>
+                <StackPanel DockPanel.Dock="Right"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="Theme"
+                               Margin="12,0,7,0"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource MutedTextBrush}"/>
+                    <ComboBox x:Name="ThemeComboBox"
+                              Width="105"
+                              Margin="0,0,12,0"
+                              SelectionChanged="ThemeComboBox_SelectionChanged">
+                        <ComboBoxItem Content="System"/>
+                        <ComboBoxItem Content="Light"/>
+                        <ComboBoxItem Content="Dark"/>
+                        <ComboBoxItem Content="Blue"/>
+                        <ComboBoxItem Content="Green"/>
+                    </ComboBox>
+
+                    <TextBlock x:Name="ModeText"
+                               Margin="4,0,4,0"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource MutedTextBrush}"
+                               FontSize="11"
+                               Text="LOCAL · SQLITE · OFFLINE"/>
+                </StackPanel>
             </DockPanel>
         </Border>
 
         <Border Grid.Row="1"
-                Background="#FFFFFF"
-                BorderBrush="#D8D8D8"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1"
                 Padding="8,6">
             <Grid>
@@ -61,7 +81,8 @@
 
                 <TextBlock Text="Search"
                            VerticalAlignment="Center"
-                           Margin="0,0,8,0"/>
+                           Margin="0,0,8,0"
+                           Foreground="{DynamicResource TextBrush}"/>
 
                 <TextBox x:Name="SearchBox"
                          Grid.Column="1"
@@ -71,14 +92,14 @@
                            Grid.Column="2"
                            Margin="16,0,0,0"
                            VerticalAlignment="Center"
-                           Foreground="#707070"
+                           Foreground="{DynamicResource MutedTextBrush}"
                            TextTrimming="CharacterEllipsis"/>
 
                 <TextBlock x:Name="CountText"
                            Grid.Column="3"
                            Margin="18,0,4,0"
                            VerticalAlignment="Center"
-                           Foreground="#505050"/>
+                           Foreground="{DynamicResource TextBrush}"/>
             </Grid>
         </Border>
 
@@ -101,8 +122,10 @@
                   FrozenColumnCount="2"
                   RowHeaderWidth="36"
                   RowHeight="25"
-                  AlternatingRowBackground="#FAFAFA"
-                  Background="#FFFFFF"
+                  AlternatingRowBackground="{DynamicResource SurfaceAltBrush}"
+                  Background="{DynamicResource SurfaceBrush}"
+                  Foreground="{DynamicResource TextBrush}"
+                  BorderBrush="{DynamicResource BorderBrush}"
                   BorderThickness="0">
 
             <DataGrid.Columns>
@@ -183,8 +206,8 @@
         </DataGrid>
 
         <Border Grid.Row="3"
-                Background="#FFFFFF"
-                BorderBrush="#D8D8D8"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,1,0,0"
                 Padding="8,5">
             <Grid>
@@ -194,12 +217,12 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBlock x:Name="StatusText"
-                           Foreground="#505050"
+                           Foreground="{DynamicResource TextBrush}"
                            Text="Ready"/>
 
                 <TextBlock x:Name="DirtyText"
                            Grid.Column="1"
-                           Foreground="#805500"/>
+                           Foreground="{DynamicResource DirtyBrush}"/>
             </Grid>
         </Border>
     </Grid>
