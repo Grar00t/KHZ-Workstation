@@ -13,6 +13,7 @@
     <Authors>Sulaiman Alshammari</Authors>
     <Description>Local-first offline asset register and Excel-style data entry pilot.</Description>
     <UseAppHost>true</UseAppHost>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
