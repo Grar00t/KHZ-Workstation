@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Data;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
@@ -18,6 +19,7 @@ public partial class MainWindow : Window
     private readonly AssetStore _store = new();
     private readonly ObservableCollection<AssetRecord> _assets = new();
     private readonly ICollectionView _assetsView;
+    private bool _settingTheme;
 
     public MainWindow()
     {
@@ -29,6 +31,7 @@ public partial class MainWindow : Window
         _assetsView.Filter = FilterAsset;
         AssetsGrid.ItemsSource = _assetsView;
 
+        SetThemeSelection(ThemeManager.CurrentTheme);
         LoadAssets();
     }
 
@@ -163,7 +166,173 @@ public partial class MainWindow : Window
         LoadAssets();
     }
 
-    private void SearchBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    private void OpenExcel_Click(object sender, RoutedEventArgs e)
+    {
+        CommitGridEdit();
+
+        if (HasUnsavedChanges())
+        {
+            var answer = MessageBox.Show(
+                this,
+                "Save current unsaved changes before opening an Excel file?",
+                "Excel import",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (answer != MessageBoxResult.Yes)
+            {
+                SetStatus("Excel import cancelled because unsaved changes exist");
+                return;
+            }
+
+            try
+            {
+                _store.SaveChanges(_assets);
+                LoadAssets();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    this,
+                    ex.Message,
+                    "Save before import failed",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+        }
+
+        var picker = new OpenFileDialog
+        {
+            Title = "Open Excel workbook",
+            Filter = "Excel workbook (*.xlsx)|*.xlsx",
+            DefaultExt = ".xlsx",
+            CheckFileExists = true,
+            Multiselect = false
+        };
+
+        if (picker.ShowDialog(this) != true)
+            return;
+
+        try
+        {
+            var workbook = ExcelWorkbookReader.Read(picker.FileName);
+
+            var preview = new ExcelImportWindow(
+                picker.FileName,
+                workbook.SheetName,
+                workbook.Rows)
+            {
+                Owner = this
+            };
+
+            if (preview.ShowDialog() != true)
+            {
+                SetStatus("Excel preview closed without importing");
+                return;
+            }
+
+            var imported = preview.ImportedAssets.ToArray();
+            if (imported.Length == 0)
+            {
+                SetStatus("No Excel rows selected for import");
+                return;
+            }
+
+            ValidateImportAssetTags(imported);
+            _store.SaveChanges(imported);
+            LoadAssets();
+
+            SetStatus(
+                $"Imported {imported.Length:N0} row(s) from {Path.GetFileName(picker.FileName)}");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                ex.Message,
+                "Excel import failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+
+            SetStatus("Excel import failed");
+        }
+    }
+
+    private void ThemeComboBox_SelectionChanged(
+        object sender,
+        SelectionChangedEventArgs e)
+    {
+        if (_settingTheme || ThemeComboBox.SelectedItem is not ComboBoxItem item)
+            return;
+
+        var theme = Convert.ToString(item.Content, CultureInfo.InvariantCulture);
+        if (string.IsNullOrWhiteSpace(theme))
+            return;
+
+        ThemeManager.Apply(theme);
+        SetStatus($"Theme changed to {theme}");
+    }
+
+    private void SetThemeSelection(string theme)
+    {
+        _settingTheme = true;
+
+        try
+        {
+            var item = ThemeComboBox.Items
+                .OfType<ComboBoxItem>()
+                .FirstOrDefault(x => string.Equals(
+                    Convert.ToString(x.Content, CultureInfo.InvariantCulture),
+                    theme,
+                    StringComparison.OrdinalIgnoreCase));
+
+            ThemeComboBox.SelectedItem = item ?? ThemeComboBox.Items[0];
+        }
+        finally
+        {
+            _settingTheme = false;
+        }
+    }
+
+    private void ValidateImportAssetTags(IReadOnlyList<AssetRecord> imported)
+    {
+        var duplicateInWorkbook = imported
+            .GroupBy(x => x.AssetTag.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Where(x => x.Count() > 1)
+            .Select(x => x.Key)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Take(10)
+            .ToArray();
+
+        if (duplicateInWorkbook.Length > 0)
+        {
+            throw new InvalidOperationException(
+                "Duplicate AssetTag values exist in the selected Excel rows:\n" +
+                string.Join("\n", duplicateInWorkbook));
+        }
+
+        var existing = _store.LoadAssets()
+            .Select(x => x.AssetTag.Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var collisions = imported
+            .Select(x => x.AssetTag.Trim())
+            .Where(existing.Contains)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(10)
+            .ToArray();
+
+        if (collisions.Length > 0)
+        {
+            throw new InvalidOperationException(
+                "These AssetTag values already exist in the local database:\n" +
+                string.Join("\n", collisions));
+        }
+    }
+
+    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         _assetsView.Refresh();
         UpdateCounts();
@@ -424,11 +593,11 @@ public partial class MainWindow : Window
     private void CommitGridEdit()
     {
         AssetsGrid.CommitEdit(
-            System.Windows.Controls.DataGridEditingUnit.Cell,
+            DataGridEditingUnit.Cell,
             exitEditingMode: true);
 
         AssetsGrid.CommitEdit(
-            System.Windows.Controls.DataGridEditingUnit.Row,
+            DataGridEditingUnit.Row,
             exitEditingMode: true);
     }
 
