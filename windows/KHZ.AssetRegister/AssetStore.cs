@@ -90,36 +90,112 @@ public sealed class AssetStore
 
     public void SaveChanges(IEnumerable<AssetRecord> assets)
     {
+        ArgumentNullException.ThrowIfNull(assets);
+
+        var items = assets as IReadOnlyList<AssetRecord> ?? assets.ToArray();
+        var dirtyItems = items
+            .Where(x => x.IsDirty || x.AssetId <= 0)
+            .ToArray();
+
+        if (dirtyItems.Length == 0)
+            return;
+
         using var connection = OpenConnection();
         using var transaction = connection.BeginTransaction();
 
-        foreach (var asset in assets.Where(x => x.IsDirty || x.AssetId <= 0))
-        {
-            Validate(asset);
+        var inserted = new List<PendingInsert>();
 
-            if (asset.AssetId <= 0)
-                Insert(connection, transaction, asset);
-            else
-                Update(connection, transaction, asset);
+        try
+        {
+            foreach (var asset in dirtyItems)
+            {
+                Validate(asset);
+                EnsureAssetTagAvailable(connection, transaction, asset);
+
+                if (asset.AssetId <= 0)
+                {
+                    var result = Insert(connection, transaction, asset);
+                    inserted.Add(new PendingInsert(asset, result.AssetId, result.CreatedAt));
+                }
+                else
+                {
+                    Update(connection, transaction, asset);
+                }
+            }
+
+            transaction.Commit();
+        }
+        catch
+        {
+            try
+            {
+                transaction.Rollback();
+            }
+            catch
+            {
+            }
+
+            throw;
         }
 
-        transaction.Commit();
+        foreach (var pending in inserted)
+        {
+            pending.Asset.AssetId = pending.AssetId;
+            pending.Asset.CreatedAt = pending.CreatedAt;
+        }
 
-        foreach (var asset in assets)
+        foreach (var asset in items)
             asset.MarkClean();
     }
 
     public void Delete(long assetId)
+        => DeleteMany(new[] { assetId });
+
+    public void DeleteMany(IEnumerable<long> assetIds)
     {
-        if (assetId <= 0)
+        ArgumentNullException.ThrowIfNull(assetIds);
+
+        var ids = assetIds
+            .Where(x => x > 0)
+            .Distinct()
+            .ToArray();
+
+        if (ids.Length == 0)
             return;
 
         using var connection = OpenConnection();
+        using var transaction = connection.BeginTransaction();
         using var command = connection.CreateCommand();
 
+        command.Transaction = transaction;
         command.CommandText = "DELETE FROM assets WHERE AssetId = @id;";
-        command.Parameters.AddWithValue("@id", assetId);
-        command.ExecuteNonQuery();
+
+        var idParameter = command.CreateParameter();
+        idParameter.ParameterName = "@id";
+        command.Parameters.Add(idParameter);
+
+        try
+        {
+            foreach (var id in ids)
+            {
+                idParameter.Value = id;
+                command.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
+        }
+        catch
+        {
+            try
+            {
+                transaction.Rollback();
+            }
+            catch
+            {
+            }
+
+            throw;
+        }
     }
 
     public IReadOnlyList<AuditRecord> LoadAudit(int limit = 1000)
@@ -366,58 +442,70 @@ public sealed class AssetStore
         return connection;
     }
 
-    private static void Insert(
+    private static InsertResult Insert(
         SqliteConnection connection,
         SqliteTransaction transaction,
         AssetRecord asset)
     {
-        using var command = connection.CreateCommand();
-        command.Transaction = transaction;
-        command.CommandText = """
-            INSERT INTO assets
-            (
-                AssetTag,
-                SerialNumber,
-                Barcode,
-                Category,
-                Description,
-                Manufacturer,
-                Model,
-                Location,
-                Department,
-                Custodian,
-                Status,
-                PurchaseDate,
-                PurchaseCost,
-                WarrantyExpiry,
-                Condition,
-                Notes
-            )
-            VALUES
-            (
-                @assetTag,
-                @serialNumber,
-                @barcode,
-                @category,
-                @description,
-                @manufacturer,
-                @model,
-                @location,
-                @department,
-                @custodian,
-                @status,
-                @purchaseDate,
-                @purchaseCost,
-                @warrantyExpiry,
-                @condition,
-                @notes
-            );
-            SELECT last_insert_rowid();
-            """;
+        using (var command = connection.CreateCommand())
+        {
+            command.Transaction = transaction;
+            command.CommandText = """
+                INSERT INTO assets
+                (
+                    AssetTag,
+                    SerialNumber,
+                    Barcode,
+                    Category,
+                    Description,
+                    Manufacturer,
+                    Model,
+                    Location,
+                    Department,
+                    Custodian,
+                    Status,
+                    PurchaseDate,
+                    PurchaseCost,
+                    WarrantyExpiry,
+                    Condition,
+                    Notes
+                )
+                VALUES
+                (
+                    @assetTag,
+                    @serialNumber,
+                    @barcode,
+                    @category,
+                    @description,
+                    @manufacturer,
+                    @model,
+                    @location,
+                    @department,
+                    @custodian,
+                    @status,
+                    @purchaseDate,
+                    @purchaseCost,
+                    @warrantyExpiry,
+                    @condition,
+                    @notes
+                );
+                """;
 
-        Bind(command, asset);
-        asset.AssetId = Convert.ToInt64(command.ExecuteScalar(), CultureInfo.InvariantCulture);
-        asset.CreatedAt = ReadCreatedAt(connection, transaction, asset.AssetId);
+            Bind(command, asset);
+            command.ExecuteNonQuery();
+        }
+
+        long assetId;
+
+        using (var idCommand = connection.CreateCommand())
+        {
+            idCommand.Transaction = transaction;
+            idCommand.CommandText = "SELECT last_insert_rowid();";
+            assetId = Convert.ToInt64(idCommand.ExecuteScalar(), CultureInfo.InvariantCulture);
+        }
+
+        var createdAt = ReadCreatedAt(connection, transaction, assetId);
+        return new InsertResult(assetId, createdAt);
     }
 
     private static void Update(
@@ -453,6 +541,32 @@ public sealed class AssetStore
 
         if (command.ExecuteNonQuery() != 1)
             throw new InvalidOperationException($"Asset {asset.AssetId} no longer exists.");
+    }
+
+    private static void EnsureAssetTagAvailable(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        AssetRecord asset)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            SELECT AssetId
+            FROM assets
+            WHERE AssetTag = @assetTag COLLATE NOCASE
+              AND AssetId <> @assetId
+            LIMIT 1;
+            """;
+
+        command.Parameters.AddWithValue("@assetTag", asset.AssetTag.Trim());
+        command.Parameters.AddWithValue("@assetId", asset.AssetId);
+
+        var existing = command.ExecuteScalar();
+        if (existing is null || existing is DBNull)
+            return;
+
+        throw new InvalidOperationException(
+            $"AssetTag '{asset.AssetTag.Trim()}' already exists in the local database.");
     }
 
     private static void Bind(SqliteCommand command, AssetRecord asset)
@@ -520,6 +634,13 @@ public sealed class AssetStore
         => reader.IsDBNull(ordinal)
             ? 0m
             : Convert.ToDecimal(reader.GetValue(ordinal), CultureInfo.InvariantCulture);
+
+    private sealed record InsertResult(long AssetId, string CreatedAt);
+
+    private sealed record PendingInsert(
+        AssetRecord Asset,
+        long AssetId,
+        string CreatedAt);
 }
 
 public sealed record AuditRecord(
