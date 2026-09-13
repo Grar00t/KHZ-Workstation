@@ -1,12 +1,29 @@
+using System.ComponentModel;
 using System.Globalization;
+using System.IO;
+using System.Runtime.CompilerServices;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 
 namespace KHZ.AssetRegister;
 
-public sealed class ExcelPreviewRow
+public sealed class ExcelPreviewRow : INotifyPropertyChanged
 {
-    public bool IsSelected { get; set; } = true;
+    private bool _isSelected = true;
+
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set
+        {
+            if (_isSelected == value)
+                return;
+
+            _isSelected = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSelected)));
+        }
+    }
+
     public string AssetTag { get; set; } = string.Empty;
     public string SerialNumber { get; set; } = string.Empty;
     public string Barcode { get; set; } = string.Empty;
@@ -23,6 +40,8 @@ public sealed class ExcelPreviewRow
     public string WarrantyExpiry { get; set; } = string.Empty;
     public string Condition { get; set; } = string.Empty;
     public string Notes { get; set; } = string.Empty;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     public AssetRecord ToAssetRecord()
         => new()
@@ -52,6 +71,10 @@ public sealed record ExcelImportData(
 
 public static class ExcelWorkbookReader
 {
+    private const int HeaderScanLimit = 50;
+    private const int MaxImportedRows = 100_000;
+    private const int MaxColumnIndex = 16_384;
+
     private static readonly Dictionary<string, string> HeaderAliases =
         new(StringComparer.OrdinalIgnoreCase)
         {
@@ -59,88 +82,186 @@ public static class ExcelWorkbookReader
             ["tag"] = "AssetTag",
             ["assetno"] = "AssetTag",
             ["assetnumber"] = "AssetTag",
+            ["رقمالأصل"] = "AssetTag",
+            ["رقمالاصل"] = "AssetTag",
+            ["رقمالعهدة"] = "AssetTag",
+            ["رقمالعهد"] = "AssetTag",
             ["serialnumber"] = "SerialNumber",
             ["serial"] = "SerialNumber",
             ["serialno"] = "SerialNumber",
             ["sn"] = "SerialNumber",
+            ["الرقمالتسلسلي"] = "SerialNumber",
+            ["رقمتسلسلي"] = "SerialNumber",
             ["barcode"] = "Barcode",
+            ["باركود"] = "Barcode",
+            ["الباركود"] = "Barcode",
             ["category"] = "Category",
+            ["الفئة"] = "Category",
+            ["التصنيف"] = "Category",
             ["description"] = "Description",
+            ["الوصف"] = "Description",
             ["manufacturer"] = "Manufacturer",
             ["make"] = "Manufacturer",
+            ["المصنع"] = "Manufacturer",
+            ["الشركةالمصنعة"] = "Manufacturer",
             ["model"] = "Model",
+            ["الموديل"] = "Model",
+            ["الطراز"] = "Model",
             ["location"] = "Location",
+            ["الموقع"] = "Location",
             ["department"] = "Department",
             ["dept"] = "Department",
+            ["القسم"] = "Department",
+            ["الإدارة"] = "Department",
+            ["الادارة"] = "Department",
             ["custodian"] = "Custodian",
             ["assignedto"] = "Custodian",
             ["owner"] = "Custodian",
+            ["المستلم"] = "Custodian",
+            ["المستخدم"] = "Custodian",
+            ["المسؤول"] = "Custodian",
             ["status"] = "Status",
+            ["الحالة"] = "Status",
             ["purchasedate"] = "PurchaseDate",
+            ["تاريخالشراء"] = "PurchaseDate",
             ["purchasecost"] = "PurchaseCost",
             ["cost"] = "PurchaseCost",
+            ["التكلفة"] = "PurchaseCost",
+            ["سعرالشراء"] = "PurchaseCost",
             ["warrantyexpiry"] = "WarrantyExpiry",
             ["warrantyexpiration"] = "WarrantyExpiry",
+            ["انتهاءالضمان"] = "WarrantyExpiry",
+            ["تاريخانتهاءالضمان"] = "WarrantyExpiry",
             ["condition"] = "Condition",
+            ["حالةالأصل"] = "Condition",
+            ["حالةالاصل"] = "Condition",
             ["notes"] = "Notes",
             ["note"] = "Notes",
-            ["remarks"] = "Notes"
+            ["remarks"] = "Notes",
+            ["ملاحظات"] = "Notes",
+            ["الملاحظات"] = "Notes"
         };
 
     public static ExcelImportData Read(string filePath)
     {
-        using var document = SpreadsheetDocument.Open(filePath, false);
+        if (string.IsNullOrWhiteSpace(filePath))
+            throw new ArgumentException("Excel file path is required.", nameof(filePath));
+
+        if (!File.Exists(filePath))
+            throw new FileNotFoundException("Excel workbook was not found.", filePath);
+
+        using var stream = new FileStream(
+            filePath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.ReadWrite | FileShare.Delete);
+
+        using var document = SpreadsheetDocument.Open(stream, false);
 
         var workbookPart = document.WorkbookPart
             ?? throw new InvalidOperationException("Excel workbook part was not found.");
 
-        var sheet = workbookPart.Workbook.Sheets?
-            .Elements<Sheet>()
-            .FirstOrDefault()
-            ?? throw new InvalidOperationException("The workbook does not contain a worksheet.");
+        var workbook = workbookPart.Workbook
+            ?? throw new InvalidOperationException("Excel workbook metadata was not found.");
 
-        if (sheet.Id?.Value is null)
-            throw new InvalidOperationException("The first worksheet has no relationship id.");
+        var sheets = workbook.Sheets?.Elements<Sheet>().ToArray()
+            ?? Array.Empty<Sheet>();
 
-        var worksheetPart = (WorksheetPart)workbookPart.GetPartById(sheet.Id.Value);
-        var sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>()
-            ?? throw new InvalidOperationException("The worksheet does not contain sheet data.");
+        if (sheets.Length == 0)
+            throw new InvalidOperationException("The workbook does not contain a worksheet.");
 
-        var rows = sheetData.Elements<Row>().ToList();
-        if (rows.Count == 0)
-            throw new InvalidOperationException("The worksheet is empty.");
+        SheetCandidate? best = null;
 
-        var headerRow = rows.FirstOrDefault(RowHasAnyValue)
-            ?? throw new InvalidOperationException("No header row was found.");
-
-        var headers = ReadRow(workbookPart, headerRow);
-        var mappedColumns = BuildColumnMap(headers);
-
-        if (mappedColumns.Count == 0)
+        foreach (var sheet in sheets)
         {
-            throw new InvalidOperationException(
-                "No recognized asset columns were found. Expected headers such as AssetTag, SerialNumber, Category, Location, Custodian, Status, PurchaseDate, PurchaseCost, Condition or Notes.");
+            var relationshipId = sheet.Id?.Value;
+            if (string.IsNullOrWhiteSpace(relationshipId))
+                continue;
+
+            WorksheetPart? worksheetPart;
+
+            try
+            {
+                worksheetPart = workbookPart.GetPartById(relationshipId) as WorksheetPart;
+            }
+            catch
+            {
+                continue;
+            }
+
+            var worksheet = worksheetPart?.Worksheet;
+            var sheetData = worksheet?.GetFirstChild<SheetData>();
+            if (sheetData is null)
+                continue;
+
+            var rows = sheetData.Elements<Row>()
+                .Take(MaxImportedRows + HeaderScanLimit + 2)
+                .ToList();
+
+            if (rows.Count == 0)
+                continue;
+
+            var scanCount = Math.Min(rows.Count, HeaderScanLimit);
+
+            for (var index = 0; index < scanCount; index++)
+            {
+                var row = rows[index];
+                if (!RowHasAnyValue(row))
+                    continue;
+
+                var headers = ReadRow(workbookPart, row);
+                var score = CountRecognizedHeaders(headers);
+
+                if (score == 0 || (best is not null && score <= best.Score))
+                    continue;
+
+                best = new SheetCandidate(
+                    sheet.Name?.Value ?? "Sheet1",
+                    rows,
+                    index,
+                    headers,
+                    score);
+            }
         }
 
-        var dataRows = new List<ExcelPreviewRow>();
-        var headerIndex = rows.IndexOf(headerRow);
-
-        for (var i = headerIndex + 1; i < rows.Count; i++)
+        if (best is null)
         {
-            var values = ReadRow(workbookPart, rows[i]);
+            throw new InvalidOperationException(
+                "No recognized asset header row was found in the first 50 rows of any worksheet. Expected headers such as AssetTag, SerialNumber, Category, Location, Custodian, Status, PurchaseDate, PurchaseCost, Condition or Notes.");
+        }
+
+        var mappedColumns = BuildColumnMap(best.Headers);
+        var dataRows = new List<ExcelPreviewRow>();
+        var importBatch = DateTime.UtcNow.ToString("yyyyMMddHHmmssfff", CultureInfo.InvariantCulture);
+
+        for (var index = best.HeaderIndex + 1; index < best.Rows.Count; index++)
+        {
+            if (dataRows.Count >= MaxImportedRows)
+            {
+                throw new InvalidOperationException(
+                    $"The workbook exceeds the import safety limit of {MaxImportedRows:N0} data rows.");
+            }
+
+            var sourceRow = best.Rows[index];
+            var values = ReadRow(workbookPart, sourceRow);
+
             if (values.Count == 0 || values.Values.All(string.IsNullOrWhiteSpace))
                 continue;
+
+            var rowNumber = sourceRow.RowIndex?.Value is uint actualRow && actualRow <= int.MaxValue
+                ? (int)actualRow
+                : index + 1;
 
             var preview = new ExcelPreviewRow();
 
             foreach (var mapping in mappedColumns)
             {
                 values.TryGetValue(mapping.Key, out var raw);
-                SetValue(preview, mapping.Value, raw ?? string.Empty, i + 1);
+                SetValue(preview, mapping.Value, raw ?? string.Empty, rowNumber);
             }
 
             if (string.IsNullOrWhiteSpace(preview.AssetTag))
-                preview.AssetTag = $"KHZ-IMP-{DateTime.Now:yyyyMMddHHmmss}-{i + 1:D5}";
+                preview.AssetTag = $"KHZ-IMP-{importBatch}-{rowNumber:D6}";
 
             if (string.IsNullOrWhiteSpace(preview.Status))
                 preview.Status = "In Service";
@@ -149,23 +270,42 @@ public static class ExcelWorkbookReader
         }
 
         if (dataRows.Count == 0)
-            throw new InvalidOperationException("No data rows were found below the header row.");
+            throw new InvalidOperationException("No data rows were found below the detected asset header row.");
 
-        return new ExcelImportData(
-            sheet.Name?.Value ?? "Sheet1",
-            dataRows);
+        return new ExcelImportData(best.SheetName, dataRows);
     }
+
+    private static int CountRecognizedHeaders(Dictionary<int, string> headers)
+        => headers.Values
+            .Select(NormalizeHeader)
+            .Where(HeaderAliases.ContainsKey)
+            .Select(x => HeaderAliases[x])
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
 
     private static Dictionary<int, string> BuildColumnMap(Dictionary<int, string> headers)
     {
         var result = new Dictionary<int, string>();
+        var mappedProperties = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var item in headers)
+        foreach (var item in headers.OrderBy(x => x.Key))
         {
             var normalized = NormalizeHeader(item.Value);
-            if (HeaderAliases.TryGetValue(normalized, out var property))
-                result[item.Key] = property;
+            if (!HeaderAliases.TryGetValue(normalized, out var property))
+                continue;
+
+            if (mappedProperties.TryGetValue(property, out var existingColumn))
+            {
+                throw new InvalidOperationException(
+                    $"The Excel header maps more than one column to '{property}' (columns {existingColumn + 1} and {item.Key + 1}). Rename or remove the duplicate column before importing.");
+            }
+
+            result[item.Key] = property;
+            mappedProperties[property] = item.Key;
         }
+
+        if (result.Count == 0)
+            throw new InvalidOperationException("No recognized asset columns were found.");
 
         return result;
     }
@@ -181,6 +321,9 @@ public static class ExcelWorkbookReader
                 continue;
 
             var column = GetColumnIndex(reference);
+            if (column < 0 || column >= MaxColumnIndex)
+                continue;
+
             result[column] = GetCellText(workbookPart, cell);
         }
 
@@ -199,8 +342,11 @@ public static class ExcelWorkbookReader
         if (cell.DataType?.Value == CellValues.SharedString
             && int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var sharedIndex))
         {
-            return workbookPart.SharedStringTablePart?
-                .SharedStringTable
+            var sharedStringTable = workbookPart.SharedStringTablePart?.SharedStringTable;
+            if (sharedStringTable is null || sharedIndex < 0)
+                return string.Empty;
+
+            return sharedStringTable
                 .Elements<SharedStringItem>()
                 .ElementAtOrDefault(sharedIndex)?
                 .InnerText ?? string.Empty;
@@ -215,21 +361,23 @@ public static class ExcelWorkbookReader
     private static int GetColumnIndex(string cellReference)
     {
         var index = 0;
+        var foundLetter = false;
 
         foreach (var character in cellReference)
         {
             if (!char.IsLetter(character))
                 break;
 
+            foundLetter = true;
             index = checked(index * 26 + (char.ToUpperInvariant(character) - 'A' + 1));
         }
 
-        return index - 1;
+        return foundLetter ? index - 1 : -1;
     }
 
     private static string NormalizeHeader(string value)
         => new(value
-            .Where(char.IsLetterOrDigit)
+            .Where(character => char.IsLetterOrDigit(character) && character != '\u0640')
             .Select(char.ToLowerInvariant)
             .ToArray());
 
@@ -265,10 +413,10 @@ public static class ExcelWorkbookReader
                     break;
                 }
 
-                if (decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var invariant)
-                    || decimal.TryParse(value, NumberStyles.Any, CultureInfo.CurrentCulture, out invariant))
+                if (decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedCost)
+                    || decimal.TryParse(value, NumberStyles.Any, CultureInfo.CurrentCulture, out parsedCost))
                 {
-                    row.PurchaseCost = invariant;
+                    row.PurchaseCost = parsedCost;
                     break;
                 }
 
@@ -282,26 +430,33 @@ public static class ExcelWorkbookReader
         if (string.IsNullOrWhiteSpace(value))
             return string.Empty;
 
-        if (DateTime.TryParse(value, CultureInfo.CurrentCulture, DateTimeStyles.None, out var parsed)
-            || DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out parsed))
-        {
-            return parsed.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-        }
-
         if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var oaDate)
             && oaDate >= 1
-            && oaDate <= 2958465)
+            && oaDate <= 2_958_465)
         {
             try
             {
                 return DateTime.FromOADate(oaDate)
                     .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             }
-            catch
+            catch (ArgumentException)
             {
             }
         }
 
+        if (DateTime.TryParse(value, CultureInfo.CurrentCulture, DateTimeStyles.AllowWhiteSpaces, out var parsed)
+            || DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out parsed))
+        {
+            return parsed.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        }
+
         return value;
     }
+
+    private sealed record SheetCandidate(
+        string SheetName,
+        List<Row> Rows,
+        int HeaderIndex,
+        Dictionary<int, string> Headers,
+        int Score);
 }
