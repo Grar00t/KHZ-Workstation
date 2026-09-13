@@ -23,10 +23,18 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Restore
-        run: dotnet restore windows/KHZ.AssetRegister/KHZ.AssetRegister.csproj -r win-x64
+        run: dotnet restore windows/KHZ.AssetRegister/KHZ.AssetRegister.csproj
 
       - name: Audit NuGet packages
-        run: dotnet list windows/KHZ.AssetRegister/KHZ.AssetRegister.csproj package --vulnerable --include-transitive
+        shell: pwsh
+        run: |
+          $output = dotnet list windows/KHZ.AssetRegister/KHZ.AssetRegister.csproj package --vulnerable --include-transitive 2>&1 | Out-String
+          Write-Host $output
+          if ($LASTEXITCODE -ne 0) { throw "NuGet audit failed with exit code $LASTEXITCODE" }
+          if ($output -match 'has the following vulnerable packages') { throw 'Vulnerable NuGet package detected' }
+
+      - name: Restore win-x64 runtime graph
+        run: dotnet restore windows/KHZ.AssetRegister/KHZ.AssetRegister.csproj -r win-x64
 
       - name: Publish self-contained win-x64
         run: dotnet publish windows/KHZ.AssetRegister/KHZ.AssetRegister.csproj -c Release -r win-x64 --self-contained true --no-restore -o dist/KHZ.AssetRegister
