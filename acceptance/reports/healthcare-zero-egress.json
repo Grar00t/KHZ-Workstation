@@ -9,7 +9,7 @@
   "scenarios": [
     {
       "command": [
-        "/usr/bin/python",
+        "/usr/local/bin/python3",
         "scripts/no_ai_baseline.py"
       ],
       "exit_code": 0,
@@ -19,7 +19,7 @@
     },
     {
       "command": [
-        "/usr/bin/python",
+        "/usr/bin/python3",
         "scripts/libreoffice_roundtrip.py"
       ],
       "exit_code": 2,
