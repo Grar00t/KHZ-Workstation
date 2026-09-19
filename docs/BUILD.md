@@ -53,12 +53,20 @@ python -m pip wheel . --no-deps --no-build-isolation -w dist
 $env:PYTHONPATH = "$PWD\src"
 python -m compileall -q src tests scripts
 python -m pip install -r requirements-automation.txt
-python -W error::ResourceWarning -m unittest discover -s tests -v
+python -m pytest tests -v
 python scripts\no_ai_baseline.py
+```
+
+The same gates run in CI (see "CI status" below). Individual gate oracles can be run directly:
+
+```powershell
+python scripts\xlsx_oracle.py -Extract acceptance\corpus\InstitutionalWorkbook.xlsx -OutCsv acceptance\reports\oracle.csv
+python scripts\healthcare_zero_egress.py   # prints EGRESS=N
+python scripts\g8_ui_audit.py                # prints GATE_G8=PASS|FAIL
 ```
 
 Office corpus tests additionally require a locally installed LibreOffice and the acceptance dependencies. See `docs/OFFICE-INSTALLATION.md` and `docs/OFFICE-COMPATIBILITY.md`.
 
 ## CI status
 
-`.github/workflows/ci.yml` is provided as a reproducible Windows/Linux verification definition. The workflow file itself is **UNVERIFIED on GitHub Actions** in this ZIP because it has not been run in the user's repository.
+`.github/workflows/ci.yml` is the reproducible verification definition. It runs an ordered, measured pipeline of eight jobs (G2 Python core, G3 C# build/tests, G4 SBOM + corpus provenance, G1 spreadsheet oracle, I5 zero-egress, G7 NFC/bidi, G8 UI). Every job prints a measured number and derives its exit code from that number. The C# build enforces `0 Warning(s)` / `0 Error(s)` under Release `TreatWarningsAsErrors`.

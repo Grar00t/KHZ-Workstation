@@ -58,7 +58,20 @@ The ONLYOFFICE spike is not a hardened production deployment claim. Review the O
 
 ## Verification
 
-The GitHub workflow builds the Windows .NET 9 solution and runs the Python core/`NO_AI_BASELINE` matrix on Windows and Ubuntu. Runtime claims remain narrower than build claims: the user's actual model/GPU path must be exercised before local inference is called runtime-verified.
+`.github/workflows/ci.yml` runs an ordered, measured pipeline. Every job prints a number and derives its exit code from that number. Runtime claims remain narrower than build claims: the user's actual model/GPU path must be exercised before local inference is called runtime-verified.
+
+| Job | Gate | Measured line | Exit condition |
+| --- | --- | --- | --- |
+| `core` | G2 | `PASSED=116 FAILED=0` | `passed>0 && failed==0` |
+| `windows-app` | G3 | `BUILD_WARNINGS=0 BUILD_ERRORS=0` / `CS_PASSED>0 CS_FAILED=0` | warnings/errors==0, tests pass |
+| `sbom` | G4 | `SBOM_ENTRIES=142 OK=142 FAILED=0 SBOM_DRIFT=PASS` | `failed==0` && no drift |
+| `g1-spreadsheet` | G1 | `ORACLE_PAIRS_AGGREGATE>0`, `PRESERVE_UNKNOWN_XML` | aggregate>0 && round-trip preserves |
+| `corpus-provenance` | G4 | `GATE_PROVENANCE=PASS` | provenance complete & hash-verified |
+| `zero-egress` | I5 | `EGRESS=0` | no unexpected non-loopback egress |
+| `g7-nfc-bidi` | G7 | `ORDER_BY_WITHOUT_COLLATE=0` | NFC at boundary + explicit collation |
+| `g8-ui` | G8 | `BODY_BELOW_4_5=0 LARGE_BELOW_3_0=0 IS_TABSTOP_FALSE=0 GATE_G8=PASS` | WCAG contrast + keyboard + no text in images |
+
+The `core` job runs the Python matrix on Windows and Ubuntu across Python 3.11/3.13. The `windows-app` job enforces the Release `TreatWarningsAsErrors` gate (`0 Warning(s)` / `0 Error(s)`) and runs the C# null-input test suite via `dotnet test`.
 
 ## Build the Windows application
 
@@ -72,18 +85,22 @@ Requirements:
 cd windows
 dotnet restore .\KHZ.Workstation.sln
 dotnet build .\KHZ.Workstation.sln -c Release
+dotnet test .\KHZ.Workstation.sln -c Release --no-build
 ```
 
 ## Repository structure
 
 ```text
 windows/KHZ.App/              primary WPF Windows application
+windows/KHZ.Tools.Tests/      C# null-input tests (G3)
 src/khz_workstation/          deterministic Python services / baseline host
-scripts/                      build and acceptance utilities
-tests/                        core/security regression tests
+scripts/                      verification gate oracles (G1/G4/G7/G8/I5) and build utilities
+tests/                        core/security regression tests + gate tests
 tools/office-spike/           local ONLYOFFICE integration spike
-acceptance/                   compatibility fixtures and evidence
+acceptance/                   compatibility fixtures, corpus, provenance, reports
+SBOM/                         SPDX SBOM + per-file SHA-256 (drift-gated)
 docs/                         architecture and deployment boundaries
+LICENSES/                     per-component license texts
 ```
 
 ## Principles

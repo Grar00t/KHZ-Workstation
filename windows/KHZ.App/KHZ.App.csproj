@@ -12,6 +12,15 @@
     <Description>Local-first institutional workstation</Description>
     <UseAppHost>true</UseAppHost>
     <ApplicationIcon>Assets\KHZ.ico</ApplicationIcon>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true' OR '$(CI)' != ''">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
   <ItemGroup>
     <Resource Include="Assets\KHZ.ico" />

@@ -8,10 +8,14 @@
     "git_read_only": true,
     "restore": true,
     "search": true,
-    "terminal": false,
+    "terminal": true,
+    "terminal_approval_bound": true,
+    "terminal_env_isolated": true,
+    "terminal_rejects_bare_boolean": true,
+    "terminal_rejects_substitution": true,
     "workspace_create": true
   },
   "office_roundtrip": "SEE acceptance/reports/office-roundtrip.json",
   "scenario": "NO_AI_BASELINE",
-  "status": "FAILED"
+  "status": "PASSED"
 }

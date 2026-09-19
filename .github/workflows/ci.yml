@@ -26,10 +26,20 @@ jobs:
         run: python -m pip install --no-build-isolation -e ".[automation]"
       - name: Compile
         run: python -m compileall -q src tests scripts
-      - name: Tests
+      - name: Tests (pytest)
         env:
           PYTHONPATH: src
-        run: python -W error::ResourceWarning -m unittest discover -s tests -v
+        run: |
+          set -euo pipefail
+          python -m pytest tests -v 2>&1 | tee /tmp/pytest.out
+          summary=$(grep -E 'passed' /tmp/pytest.out | tail -1)
+          echo "PYTEST_SUMMARY=$summary"
+          passed=$(echo "$summary" | grep -oE '[0-9]+ passed' | head -1 | grep -oE '^[0-9]+' || echo 0)
+          failed=$(echo "$summary" | grep -oE '[0-9]+ failed' | head -1 | grep -oE '^[0-9]+' || echo 0)
+          echo "PASSED=$passed"
+          echo "FAILED=$failed"
+          test "$passed" -gt 0
+          test "$failed" -eq 0
       - name: NO_AI_BASELINE
         env:
           PYTHONPATH: src
@@ -44,5 +54,213 @@ jobs:
           dotnet-version: '9.0.x'
       - name: Restore Windows app
         run: dotnet restore windows/KHZ.Workstation.sln
-      - name: Build Windows app
-        run: dotnet build windows/KHZ.Workstation.sln -c Release --no-restore
+      - name: Build Windows app (0 warnings gate)
+        run: |
+          dotnet build windows/KHZ.Workstation.sln -c Release --no-restore 2>&1 | tee build.log
+          $warnings = (Select-String -Path build.log -Pattern '^\s*(\d+)\s+Warning\(s\)' -AllMatches | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -Last 1)
+          $errors   = (Select-String -Path build.log -Pattern '^\s*(\d+)\s+Error\(s\)'   -AllMatches | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -Last 1)
+          $warnings = if ($warnings) { [int]$warnings } else { 0 }
+          $errors   = if ($errors)   { [int]$errors }   else { 0 }
+          Write-Host "BUILD_WARNINGS=$warnings"
+          Write-Host "BUILD_ERRORS=$errors"
+          if ($warnings -ne 0 -or $errors -ne 0) { exit 1 }
+        shell: pwsh
+      - name: C# null-input tests (G3)
+        run: |
+          dotnet test windows/KHZ.Workstation.sln -c Release --no-build --verbosity normal 2>&1 | tee test.log
+          $passed = (Select-String -Path test.log -Pattern 'Passed:\s+(\d+)'   | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -Last 1)
+          $failed = (Select-String -Path test.log -Pattern 'Failed:\s+(\d+)'   | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -Last 1)
+          $passed = if ($passed) { [int]$passed } else { 0 }
+          $failed = if ($failed) { [int]$failed } else { 0 }
+          Write-Host "CS_PASSED=$passed"
+          Write-Host "CS_FAILED=$failed"
+          if ($passed -eq 0 -or $failed -ne 0) { exit 1 }
+        shell: pwsh
+
+  sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Regenerate source-files.sha256 from tracked tree
+        run: |
+          set -euo pipefail
+          cp SBOM/source-files.sha256 /tmp/committed.txt
+          awk '{print $2}' SBOM/source-files.sha256 | sed 's|^\./||' | sort -u > /tmp/paths_existing.txt
+          git ls-files | grep -E '^(src/|scripts/|tests/|docs/|acceptance/|LICENSES/|\.github/)' | sort -u > /tmp/paths_scope.txt
+          cat /tmp/paths_existing.txt /tmp/paths_scope.txt | sort -u > /tmp/paths_all.txt
+          missing=0
+          while IFS= read -r p; do
+            [ -f "$p" ] || { echo "MISSING: $p"; missing=$((missing+1)); }
+          done < /tmp/paths_all.txt
+          [ "$missing" -eq 0 ] || { echo "missing_count=$missing"; exit 1; }
+          : > /tmp/regenerated.txt
+          while IFS= read -r p; do
+            h=$(sha256sum "$p" | awk '{print $1}')
+            printf '%s  ./%s\n' "$h" "$p"
+          done < /tmp/paths_all.txt | LC_ALL=C sort -k2 > /tmp/regenerated.txt
+          echo "SBOM_ENTRIES=$(wc -l < /tmp/regenerated.txt | tr -d ' ')"
+      - name: Verify SBOM hashes
+        run: |
+          set -euo pipefail
+          sha256sum -c /tmp/regenerated.txt >/tmp/verify.txt 2>&1
+          ok=$(grep -c ': OK' /tmp/verify.txt || true)
+          failed=$(grep -c ': FAILED' /tmp/verify.txt || true)
+          echo "OK=$ok"
+          echo "FAILED=$failed"
+          [ "$failed" -eq 0 ]
+      - name: Fail on SBOM drift
+        run: |
+          set -euo pipefail
+          if ! cmp -s /tmp/committed.txt /tmp/regenerated.txt; then
+            echo "SBOM drift: committed source-files.sha256 does not match the regenerated tree."
+            diff -u /tmp/committed.txt /tmp/regenerated.txt || true
+            exit 1
+          fi
+          echo "SBOM_DRIFT=PASS"
+          cp /tmp/regenerated.txt SBOM/source-files.sha256
+
+  g1-spreadsheet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install host (openpyxl for no-edit round-trip)
+        run: python -m pip install --no-build-isolation -e ".[automation]"
+      - name: Install LibreOffice (soffice) for engine round-trip
+        run: sudo apt-get update && sudo apt-get install -y libreoffice-calc
+      - name: G1 extract oracle pairs over corpus
+        run: |
+          set -euo pipefail
+          total=0
+          for f in acceptance/corpus/*.xlsx; do
+            echo "--- extract: $f ---"
+            out="acceptance/reports/oracle-pairs-$(basename "$f" .xlsx).csv"
+            n=$(python scripts/xlsx_oracle.py -Extract "$f" -OutCsv "$out" | grep '^ORACLE_PAIRS=' | cut -d= -f2 || true)
+            echo "ORACLE_PAIRS=$n"
+            total=$((total + ${n:-0}))
+          done
+          echo "ORACLE_PAIRS_AGGREGATE=$total"
+          test "$total" -gt 0
+      - name: G1 no-edit engine round-trip (soffice) - PRESERVE_UNKNOWN_XML
+        run: |
+          set -euo pipefail
+          status=0
+          for f in acceptance/corpus/*.xlsx; do
+            name="$(basename "$f")"
+            after="/tmp/rt-$name"
+            soffice --headless --norestore --nofirststartwizard --convert-to xlsx --outdir /tmp "$f" >/dev/null 2>&1
+            mv "/tmp/$name" "$after"
+            echo "--- round-trip: $f ---"
+            python scripts/xlsx_oracle.py -Before "$f" -After "$after" || status=1
+          done
+          test "$status" -eq 0
+
+  corpus-provenance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: G4 corpus provenance verification
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import csv, hashlib, os, sys
+          prov = "acceptance/corpus-provenance.csv"
+          if not os.path.isfile(prov):
+              print("MISSING: corpus-provenance.csv"); sys.exit(1)
+          rows = []
+          with open(prov, newline="", encoding="utf-8") as fh:
+              r = csv.reader(fh)
+              header = next(r)
+              for row in r: rows.append(row)
+          corpus = sorted(f for f in os.listdir("acceptance/corpus") if os.path.isfile(f"acceptance/corpus/{f}"))
+          prov_files = sorted(p.split("/")[-1] for p in (row[0] for row in rows))
+          missing = sorted(set(corpus) - set(prov_files))
+          extra = sorted(set(prov_files) - set(corpus))
+          empty = sum(1 for row in rows for v in row if v == "")
+          sha_ok = sha_bad = 0
+          for row in rows:
+              p = row[0]
+              if int(row[4]) != os.path.getsize(p):
+                  sha_bad += 1; print(f"SIZE_MISMATCH {p}")
+              if hashlib.sha256(open(p, "rb").read()).hexdigest() == row[3]:
+                  sha_ok += 1
+              else:
+                  sha_bad += 1; print(f"SHA_MISMATCH {p}")
+          print(f"CORPUS_FILES={len(corpus)}")
+          print(f"PROV_ROWS={len(rows)}")
+          print(f"MISSING={len(missing)} {missing if missing else ''}")
+          print(f"EXTRA={len(extra)} {extra if extra else ''}")
+          print(f"EMPTY_FIELDS={empty}")
+          print(f"SHA_OK={sha_ok}")
+          print(f"SHA_BAD={sha_bad}")
+          gate = (len(rows)==len(corpus) and not missing and not extra and empty==0 and sha_bad==0)
+          print(f"GATE_PROVENANCE={'PASS' if gate else 'FAIL'}")
+          sys.exit(0 if gate else 1)
+          PY
+
+  zero-egress:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install host + psutil for egress observation
+        run: python -m pip install --no-build-isolation -e ".[automation]" && python -m pip install "psutil==7.2.2"
+      - name: I5 Zero-egress hard gate
+        run: |
+          set -euo pipefail
+          PYTHONPATH=src python scripts/healthcare_zero_egress.py | tee /tmp/egress.out
+          egress=$(grep '^EGRESS=' /tmp/egress.out | cut -d= -f2)
+          echo "EGRESS=$egress"
+          test "${egress:-1}" -eq 0
+
+  g7-nfc-bidi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install host
+        run: python -m pip install --no-build-isolation -e ".[automation]"
+      - name: G7 NFC-at-boundary + explicit collation audit
+        run: |
+          set -euo pipefail
+          PYTHONPATH=src python -m pytest tests/test_g7_nfc_bidi_audit.py -v
+          echo "=== NFC boundary sites ==="
+          grep -rn 'unicodedata.normalize("NFC"' src/khz_workstation/data_service.py src/khz_workstation/search.py src/khz_workstation/security/approval.py || true
+          echo "=== ORDER BY collation ==="
+          grep -rn 'ORDER BY' src/khz_workstation/store.py
+          uncollated=$(grep -rn 'ORDER BY' src/khz_workstation/store.py | grep -vc 'COLLATE' || true)
+          echo "ORDER_BY_WITHOUT_COLLATE=$uncollated"
+          test "$uncollated" -eq 0
+
+  g8-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: G8 UI accessibility audit
+        run: |
+          set -euo pipefail
+          python scripts/g8_ui_audit.py | tee /tmp/g8.out
+          echo "=== gate-deciding lines ==="
+          grep -E '^(GATE_CONTRAST|GATE_KEYBOARD|GATE_NO_TEXT_IN_IMAGES|GATE_G8)=' /tmp/g8.out
+          body=$(grep -E '^BODY_BELOW_4_5=' /tmp/g8.out | cut -d= -f2)
+          large=$(grep -E '^LARGE_BELOW_3_0=' /tmp/g8.out | cut -d= -f2)
+          tabstop=$(grep -E '^IS_TABSTOP_FALSE=' /tmp/g8.out | cut -d= -f2)
+          echo "BODY_BELOW_4_5=$body LARGE_BELOW_3_0=$large IS_TABSTOP_FALSE=$tabstop"
+          test "$body" -eq 0
+          test "$large" -eq 0
+          test "$tabstop" -eq 0
+          test "$(grep -E '^GATE_G8=' /tmp/g8.out | cut -d= -f2)" = "PASS"
+      - name: G8 test
+        run: python -m pytest tests/test_g8_ui_audit.py -v

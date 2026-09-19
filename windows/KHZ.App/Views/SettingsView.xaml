@@ -33,7 +33,7 @@
                     <TextBlock Text="Default folder used when KHZ Workstation starts"
                                Margin="0,3,0,18"
                                FontSize="11"
-                               Foreground="#777777"/>
+                               Foreground="#595959"/>
 
                     <TextBlock Text="Default workspace folder"
                                FontSize="12"
