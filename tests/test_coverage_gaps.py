@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 import tempfile
 import unittest
@@ -198,7 +199,9 @@ class OfficeRegistryCoverageTests(unittest.TestCase):
         nope.info().engine = "NONE"
         nope.info().can_convert_pdf = False
         registry.engines = [nope]
-        with mock.patch("khz_workstation.office.registry.os.name", "posix"):
+        # Mock only the adapter platform, not the os module shared by pathlib.
+        with mock.patch("khz_workstation.office.registry.os", wraps=os) as platform_os:
+            platform_os.name = "posix"
             with self.assertRaises(FileNotFoundError):
                 registry.open_registered_or_system(Path("x.docx"))
 
@@ -277,12 +280,14 @@ class OnlyOfficeEngineCoverageTests(unittest.TestCase):
             engine.convert_to_pdf(Path("x"), Path("out"))
 
     def test_init_detects_executable_via_which(self):
-        with mock.patch("khz_workstation.office.onlyoffice.shutil.which") as which:
-            which.side_effect = lambda name: "/bin/sh" if name == "DesktopEditors" else None
-            engine = OnlyOfficeDesktopEngine()
-        self.assertIsNotNone(engine.executable)
-        info = engine.info()
-        self.assertTrue(info.available)
+        with tempfile.TemporaryDirectory() as td:
+            executable = Path(td) / "DesktopEditors"
+            executable.touch()  # Discovery must find a real file on every OS.
+            with mock.patch("khz_workstation.office.onlyoffice.shutil.which") as which:
+                which.side_effect = lambda name: str(executable) if name == "DesktopEditors" else None
+                engine = OnlyOfficeDesktopEngine()
+            self.assertEqual(engine.executable, executable)
+            self.assertTrue(engine.info().available)
 
     def test_open_for_edit_invokes_subprocess_when_executable_present(self):
         engine = OnlyOfficeDesktopEngine()

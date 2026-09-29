@@ -87,7 +87,7 @@ The repository carries a measured verification layer (`.github/workflows/ci.yml`
 
 | Gate | Oracle | Measured number |
 | --- | --- | --- |
-| G1 Spreadsheet/OOXML | `scripts/xlsx_oracle.py` | `ORACLE_PAIRS_AGGREGATE`, `PRESERVE_UNKNOWN_XML` |
+| G1 Spreadsheet/OOXML | `scripts/xlsx_oracle.py` | `ORACLE_PAIRS_AGGREGATE`, `ROUNDTRIP_STRUCTURE`, `FORMULAS_SEMANTIC_EQUIV` |
 | G2 Python core | `pytest` | `PASSED` / `FAILED` |
 | G3 C# / systems | `dotnet build` / `dotnet test` | `BUILD_WARNINGS`, `CS_PASSED` / `CS_FAILED` |
 | G4 Dataset / corpus | `SBOM/source-files.sha256`, `acceptance/corpus-provenance.csv` | `SBOM_DRIFT`, `GATE_PROVENANCE` |
@@ -95,4 +95,4 @@ The repository carries a measured verification layer (`.github/workflows/ci.yml`
 | G8 UI / layout | `scripts/g8_ui_audit.py` | `GATE_G8` (contrast / keyboard / no text in images) |
 | I5 Zero-egress | `scripts/healthcare_zero_egress.py` | `EGRESS` |
 
-Every gate prints a measured number and derives its exit code from that number.
+Each gate reports a measured result or propagates the native tool exit code; successful Windows builds emit zero warning/error markers only after `-warnaserror` succeeds.

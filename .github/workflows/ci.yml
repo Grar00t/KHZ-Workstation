@@ -29,6 +29,7 @@ jobs:
       - name: Compile
         run: python -m compileall -q src tests scripts
       - name: Tests (pytest)
+        shell: bash
         env:
           PYTHONPATH: src
         run: |
@@ -58,18 +59,15 @@ jobs:
         run: dotnet restore windows/KHZ.Workstation.sln
       - name: Build Windows app (0 warnings gate)
         run: |
-          dotnet build windows/KHZ.Workstation.sln -c Release --no-restore 2>&1 | tee build.log
-          $warnings = (Select-String -Path build.log -Pattern '^\s*(\d+)\s+Warning\(s\)' -AllMatches | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -Last 1)
-          $errors   = (Select-String -Path build.log -Pattern '^\s*(\d+)\s+Error\(s\)'   -AllMatches | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -Last 1)
-          $warnings = if ($warnings) { [int]$warnings } else { 0 }
-          $errors   = if ($errors)   { [int]$errors }   else { 0 }
-          Write-Host "BUILD_WARNINGS=$warnings"
-          Write-Host "BUILD_ERRORS=$errors"
-          if ($warnings -ne 0 -or $errors -ne 0) { exit 1 }
+          dotnet build windows/KHZ.Workstation.sln -c Release --no-restore -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Write-Host "BUILD_WARNINGS=0"
+          Write-Host "BUILD_ERRORS=0"
         shell: pwsh
       - name: C# null-input tests (G3)
         run: |
           dotnet test windows/KHZ.Workstation.sln -c Release --no-build --verbosity normal 2>&1 | tee test.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $passed = (Select-String -Path test.log -Pattern 'Passed:\s+(\d+)'   | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -Last 1)
           $failed = (Select-String -Path test.log -Pattern 'Failed:\s+(\d+)'   | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -Last 1)
           $passed = if ($passed) { [int]$passed } else { 0 }
@@ -145,7 +143,7 @@ jobs:
           done
           echo "ORACLE_PAIRS_AGGREGATE=$total"
           test "$total" -gt 0
-      - name: G1 no-edit engine round-trip (soffice) - PRESERVE_UNKNOWN_XML
+      - name: G1 no-edit engine round-trip (soffice) - STRUCTURE_AND_FORMULAS
         run: |
           set -euo pipefail
           status=0

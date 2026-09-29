@@ -58,14 +58,14 @@ The ONLYOFFICE spike is not a hardened production deployment claim. Review the O
 
 ## Verification
 
-`.github/workflows/ci.yml` runs an ordered, measured pipeline. Every job prints a number and derives its exit code from that number. Runtime claims remain narrower than build claims: the user's actual model/GPU path must be exercised before local inference is called runtime-verified.
+`.github/workflows/ci.yml` runs an ordered, measured pipeline. Each gate either derives its exit code from measured counters or propagates the native tool exit code. Successful Windows builds emit `BUILD_WARNINGS=0` and `BUILD_ERRORS=0` only after `-warnaserror` succeeds. Runtime claims remain narrower than build claims: the user's actual model/GPU path must be exercised before local inference is called runtime-verified.
 
 | Job | Gate | Measured line | Exit condition |
 | --- | --- | --- | --- |
-| `core` | G2 | `PASSED=116 FAILED=0` | `passed>0 && failed==0` |
+| `core` | G2 | `PASSED>0 FAILED=0` | `passed>0 && failed==0` |
 | `windows-app` | G3 | `BUILD_WARNINGS=0 BUILD_ERRORS=0` / `CS_PASSED>0 CS_FAILED=0` | warnings/errors==0, tests pass |
-| `sbom` | G4 | `SBOM_ENTRIES=142 OK=142 FAILED=0 SBOM_DRIFT=PASS` | `failed==0` && no drift |
-| `g1-spreadsheet` | G1 | `ORACLE_PAIRS_AGGREGATE>0`, `PRESERVE_UNKNOWN_XML` | aggregate>0 && round-trip preserves |
+| `sbom` | G4 | `SBOM_ENTRIES>0 FAILED=0 SBOM_DRIFT=PASS` | `failed==0` && no drift |
+| `g1-spreadsheet` | G1 | `ORACLE_PAIRS_AGGREGATE>0`, `ROUNDTRIP_STRUCTURE`, `FORMULAS_SEMANTIC_EQUIV` | aggregate>0 && formula coordinates/semantics + structural features preserved |
 | `corpus-provenance` | G4 | `GATE_PROVENANCE=PASS` | provenance complete & hash-verified |
 | `zero-egress` | I5 | `EGRESS=0` | no unexpected non-loopback egress |
 | `g7-nfc-bidi` | G7 | `ORDER_BY_WITHOUT_COLLATE=0` | NFC at boundary + explicit collation |

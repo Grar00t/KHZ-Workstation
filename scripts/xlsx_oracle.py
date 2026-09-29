@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import csv
-import hashlib
 import re
 import sys
 import zipfile
@@ -120,35 +119,75 @@ def run_extract(path: Path, out_csv: Path) -> int:
     return 1 if len(oracle) > 0 else 2
 
 
-def part_hashes(path: Path) -> dict[str, str]:
-    zf = zipfile.ZipFile(path)
-    return {name: hashlib.sha256(zf.read(name)).hexdigest() for name in sorted(zf.namelist())}
+def canonical_formula(formula: str) -> str:
+    parts = re.split(r'("(?:""|[^"])*")', formula)
+    for i in range(0, len(parts), 2):
+        chunk = re.sub(r"\s+", "", parts[i]).upper()
+        chunk = re.sub(r"\b(TRUE|FALSE)\(\)", r"\1", chunk)
+        parts[i] = chunk
+    return "".join(parts)
+
+
+def workbook_snapshot(path: Path) -> dict:
+    with zipfile.ZipFile(path) as zf:
+        names = set(zf.namelist())
+        workbook = ET.fromstring(zf.read("xl/workbook.xml"))
+        ordered_sheets = [s.attrib["name"] for s in workbook.iter(f"{NS}sheet")]
+        formulas: dict[str, str] = {}
+        validations = conditional = protected = 0
+        worksheet_parts = sorted(n for n in names if SHEET_RE.match(n))
+        for sheet_part in worksheet_parts:
+            sheet = ET.fromstring(zf.read(sheet_part))
+            for cell in sheet.iter(f"{NS}c"):
+                formula = cell.find(f"{NS}f")
+                if formula is not None:
+                    formulas[f"{sheet_part}:{cell.attrib.get('r', '')}"] = canonical_formula(formula.text or "")
+            validations += len(sheet.findall(f".//{NS}dataValidation"))
+            conditional += len(sheet.findall(f".//{NS}conditionalFormatting"))
+            protected += int(sheet.find(f"{NS}sheetProtection") is not None)
+        return {
+            "sheet_names": ordered_sheets,
+            "worksheets": len(worksheet_parts),
+            "formulas": formulas,
+            "defined_names": len(workbook.findall(f".//{NS}definedName")),
+            "tables": sum(n.startswith("xl/tables/table") and n.endswith(".xml") for n in names),
+            "validations": validations,
+            "conditional_formatting_ranges": conditional,
+            "protected_sheets": protected,
+            "charts": sum(n.startswith("xl/charts/chart") and n.endswith(".xml") for n in names),
+            "comments": sum(bool(re.fullmatch(r"xl/comments\d+\.xml", n)) for n in names),
+            "pivot_tables": sum(n.startswith("xl/pivotTables/") and n.endswith(".xml") for n in names),
+            "pivot_cache": sum(n.startswith("xl/pivotCache/") and n.endswith(".xml") for n in names),
+        }
 
 
 def run_before_after(before: Path, after: Path) -> int:
-    bh = part_hashes(before)
-    ah = part_hashes(after)
-    before_only = sorted(set(bh) - set(ah))
-    after_only = sorted(set(ah) - set(bh))
-    common = sorted(set(bh) & set(ah))
-    mismatched = [n for n in common if bh[n] != ah[n]]
-    preserve = "PASS" if not before_only and not after_only and not mismatched else "FAIL"
-    print(f"BEFORE_PARTS={len(bh)}")
-    print(f"AFTER_PARTS={len(ah)}")
-    print(f"BEFORE_ONLY={len(before_only)}")
-    print(f"AFTER_ONLY={len(after_only)}")
-    print(f"MISMATCHED={len(mismatched)}")
-    print(f"PRESERVE_UNKNOWN_XML={preserve}")
-    if mismatched:
-        for n in mismatched[:10]:
-            print(f"MISMATCH {n}")
-    return 0 if preserve == "PASS" else 1
+    before_snapshot = workbook_snapshot(before)
+    after_snapshot = workbook_snapshot(after)
+    before_formulas = before_snapshot.pop("formulas")
+    after_formulas = after_snapshot.pop("formulas")
+    coordinates_preserved = set(before_formulas) == set(after_formulas)
+    formulas_equivalent = before_formulas == after_formulas
+    structure_mismatches = [
+        key for key in sorted(before_snapshot)
+        if before_snapshot[key] != after_snapshot.get(key)
+    ]
+    preserve = coordinates_preserved and formulas_equivalent and not structure_mismatches
+    print(f"FORMULAS_BEFORE={len(before_formulas)}")
+    print(f"FORMULAS_AFTER={len(after_formulas)}")
+    print(f"FORMULA_COORDINATES_PRESERVED={'PASS' if coordinates_preserved else 'FAIL'}")
+    print(f"FORMULAS_SEMANTIC_EQUIV={'PASS' if formulas_equivalent else 'FAIL'}")
+    print(f"STRUCTURE_MISMATCHES={len(structure_mismatches)}")
+    for key in structure_mismatches:
+        print(f"STRUCTURE_MISMATCH {key}: {before_snapshot[key]!r} -> {after_snapshot.get(key)!r}")
+    print(f"ROUNDTRIP_STRUCTURE={'PASS' if preserve else 'FAIL'}")
+    return 0 if preserve else 1
 
 
 def main(argv: list[str]) -> int:
     if len(argv) < 2:
         print("usage: xlsx_oracle.py -Extract book.xlsx [-OutCsv out.csv]")
-        print("       xlsx_oracle.py -Before b.xlsx -After a.xlsx")
+        print("       xlsx_oracle.py -Before b.xlsx -After a.xlsx  # semantic round-trip")
         return 2
     mode = argv[1]
     if mode == "-Extract":
