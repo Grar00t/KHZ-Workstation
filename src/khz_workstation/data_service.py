@@ -3,6 +3,7 @@ from __future__ import annotations
 from getpass import getuser
 import csv
 import re
+import unicodedata
 from pathlib import Path
 
 from .schema_sidecar import load_sidecar, sidecar_path, sqlite_types_for_headers, value_violates_schema
@@ -37,8 +38,12 @@ class DataDependencyError(RuntimeError):
     pass
 
 
+def _nfc(value: object) -> str:
+    return unicodedata.normalize("NFC", str(value))
+
+
 def _identifier(value: str, fallback: str) -> str:
-    source = value.strip() if value and value.strip() else fallback
+    source = unicodedata.normalize("NFC", value).strip() if value and value.strip() else fallback
     candidate = _INVALID_IDENTIFIER_CHAR.sub("_", source).strip("_")
     if not candidate:
         candidate = fallback
@@ -124,7 +129,7 @@ def _coerce(value: object, typ: str) -> object | None:
         return int(str(value).strip(), 10)
     if typ == "REAL":
         return float(value)
-    return str(value)
+    return unicodedata.normalize("NFC", str(value))
 
 
 class DataWorkspaceService:
@@ -203,7 +208,7 @@ class DataWorkspaceService:
             raise ValueError(f"LIMIT_COLUMNS: {len(raw_headers)} exceeds {MAX_COLUMNS}")
         if len(rows) > MAX_ROWS:
             raise ValueError(f"LIMIT_ROWS: {len(rows)} exceeds {MAX_ROWS}")
-        headers = _dedupe_headers(raw_headers)
+        headers = _dedupe_headers([unicodedata.normalize("NFC", h) for h in raw_headers])
         width = len(headers)
         normalized = [list(row[:width]) + [None] * max(0, width - len(row)) for row in rows]
         schema = None

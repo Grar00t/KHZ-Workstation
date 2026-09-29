@@ -126,7 +126,7 @@
 
                 <TextBlock Grid.Row="1"
                            Margin="0,14,0,0"
-                           Foreground="#777777"
+                           Foreground="#595959"
                            FontSize="11"
                            TextWrapping="Wrap"
                            Text="Restore creates a new workspace folder and does not automatically replace or activate the workspace currently open in KHZ."/>

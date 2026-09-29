@@ -15,6 +15,20 @@ namespace KHZ.Tools.Office;
 /// <summary>Shared PPTX navigation.</summary>
 internal static class SlidePackage
 {
+    /// <summary>Resolves the slide root, failing closed on a corrupt package.</summary>
+    internal static Slide RequireSlide(SlidePart part)
+    {
+        if (part is null)
+            throw new ToolFailureException(
+                "invalid_package",
+                "The .pptx package has no slide part.");
+
+        return part.Slide
+               ?? throw new ToolFailureException(
+                   "invalid_package",
+                   "The .pptx slide part has no slide element.");
+    }
+
     /// <summary>Slide parts in presentation order.</summary>
     internal static List<SlidePart> Slides(PresentationPart presentationPart)
     {
@@ -124,7 +138,7 @@ public sealed class ReadSlidesTool : IKhzTool
             var shapes = new List<object>();
             var shapeIndex = 0;
 
-            foreach (var shape in slideParts[slideIndex].Slide.Descendants<Shape>())
+            foreach (var shape in SlidePackage.RequireSlide(slideParts[slideIndex]).Descendants<Shape>())
             {
                 var currentShape = shapeIndex++;
 
@@ -238,7 +252,7 @@ public sealed class WriteSlideTextTool : IKhzTool
                 if (targetSlide >= 0 && index != targetSlide)
                     continue;
 
-                foreach (var paragraph in slideParts[index].Slide.Descendants<A.Paragraph>())
+                foreach (var paragraph in SlidePackage.RequireSlide(slideParts[index]).Descendants<A.Paragraph>())
                 {
                     var text = SlidePackage.ParagraphText(paragraph);
 
@@ -300,7 +314,7 @@ public sealed class WriteSlideTextTool : IKhzTool
 
                 var changedOnSlide = false;
 
-                foreach (var paragraph in slideParts[index].Slide.Descendants<A.Paragraph>().ToList())
+                foreach (var paragraph in SlidePackage.RequireSlide(slideParts[index]).Descendants<A.Paragraph>().ToList())
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
@@ -322,7 +336,7 @@ public sealed class WriteSlideTextTool : IKhzTool
 
                 if (changedOnSlide)
                 {
-                    slideParts[index].Slide.Save();
+                    SlidePackage.RequireSlide(slideParts[index]).Save();
 
                     if (!replaceAll)
                         break;

@@ -15,6 +15,7 @@
 - Formula matrix in this exact LibreOffice version returned unsupported-name errors for `SORTBY`, `TAKE`, `DROP`, `HSTACK`, and `VSTACK`.
 - VBA, Power Query, Power Pivot, Office Scripts, and COM add-ins are not claimed.
 - XLSM preservation/execution was not tested.
+- The synthetic corpus file `FormulaCompatibility.xlsx` caches no `<v>` values, so the G1 oracle extracts `ORACLE_PAIRS=0` from it; it is retained as a declared limitation rather than deleted. The remaining corpus file (`InstitutionalWorkbook.xlsx`) yields `ORACLE_PAIRS=4807`.
 
 ## PDF
 
@@ -62,3 +63,10 @@
 
 - English is canonical.
 - Locale architecture and RTL metadata exist, but Arabic resource parity and full RTL widget layout have not been implemented.
+
+## Verification
+
+- The G1 no-edit engine round-trip step runs `soffice` (LibreOffice), which is installed by the CI job on `ubuntu-latest`; it is not available in every developer sandbox.
+- The `windows-app` CI job (`dotnet build`/`dotnet test` with WPF targets and `pwsh`) runs on `windows-latest` and cannot execute in a Linux-only sandbox.
+- `scripts/xlsx-oracle.ps1` requires PowerShell 7+ (`pwsh`); the zero-dependency Python twin `scripts/xlsx_oracle.py` provides the same output contract and is used by CI.
+- `GATES.md` is referenced by the upgrade directive but is not present in this repository.

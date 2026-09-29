@@ -93,7 +93,7 @@
                                    FontSize="14"/>
                         <TextBlock x:Name="RuntimeStatusText"
                                    Text="Local AI disabled for this session"
-                                   Foreground="#737373"
+                                   Foreground="#595959"
                                    FontSize="10"
                                    Margin="0,2,0,0"/>
                     </StackPanel>
@@ -134,7 +134,7 @@
                                     <TextBlock Text="{Binding RoleLabel}"
                                                FontSize="10"
                                                FontWeight="SemiBold"
-                                               Foreground="#737373"
+                                               Foreground="#595959"
                                                Margin="0,0,0,5"/>
                                     <TextBlock Text="{Binding Content}"
                                                FontSize="13"

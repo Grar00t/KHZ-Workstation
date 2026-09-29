@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -21,7 +22,7 @@ class LocalSearch:
         self.content_enabled = content_enabled
 
     def query(self, text: str, limit: int = 200) -> list[SearchResult]:
-        needle = text.casefold().strip()
+        needle = unicodedata.normalize("NFC", text).casefold().strip()
         if not needle:
             return []
         out: list[SearchResult] = []

@@ -79,7 +79,7 @@
                        VerticalAlignment="Center"
                        FontSize="10"
                        FontWeight="SemiBold"
-                       Foreground="#777777"/>
+                       Foreground="#595959"/>
 
             <Button Grid.Column="1"
                     Content="Complete selected"

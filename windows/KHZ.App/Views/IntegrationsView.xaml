@@ -45,7 +45,7 @@
                     <TextBlock Text="Optional institutional business-system endpoint"
                                Margin="0,3,0,16"
                                FontSize="11"
-                               Foreground="#777777"/>
+                               Foreground="#595959"/>
 
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -110,7 +110,7 @@
                     <TextBlock Text="Optional shared or institutional database target"
                                Margin="0,3,0,16"
                                FontSize="11"
-                               Foreground="#777777"/>
+                               Foreground="#595959"/>
 
                     <Grid>
                         <Grid.ColumnDefinitions>

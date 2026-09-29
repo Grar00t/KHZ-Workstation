@@ -1,15 +1,20 @@
 {
+  "egress": 0,
   "platform": "linux",
   "scenario": "HEALTHCARE_ZERO_EGRESS",
+  "scenario_exit_codes": [
+    0,
+    2
+  ],
   "scenarios": [
     {
       "command": [
-        "/opt/pyvenv/bin/python3",
+        "/usr/local/bin/python3",
         "scripts/no_ai_baseline.py"
       ],
       "exit_code": 0,
       "stderr_tail": "",
-      "stdout_tail": "{\n  \"checks\": {\n    \"ai_kill_switch\": true,\n    \"audit\": true,\n    \"backup\": true,\n    \"data\": true,\n    \"files\": true,\n    \"git_read_only\": true,\n    \"restore\": true,\n    \"search\": true,\n    \"terminal\": true,\n    \"workspace_create\": true\n  },\n  \"office_roundtrip\": \"SEE acceptance/reports/office-roundtrip.json\",\n  \"scenario\": \"NO_AI_BASELINE\",\n  \"status\": \"PASSED\"\n}\n",
+      "stdout_tail": "{\n  \"checks\": {\n    \"ai_kill_switch\": true,\n    \"audit\": true,\n    \"backup\": true,\n    \"data\": true,\n    \"files\": true,\n    \"git_read_only\": true,\n    \"restore\": true,\n    \"search\": true,\n    \"terminal\": true,\n    \"terminal_approval_bound\": true,\n    \"terminal_env_isolated\": true,\n    \"terminal_rejects_bare_boolean\": true,\n    \"terminal_rejects_substitution\": true,\n    \"workspace_create\": true\n  },\n  \"office_roundtrip\": \"SEE acceptance/reports/office-roundtrip.json\",\n  \"scenario\": \"NO_AI_BASELINE\",\n  \"status\": \"PASSED\"\n}\n",
       "unexpected_non_loopback": []
     },
     {
@@ -17,9 +22,9 @@
         "/usr/bin/python3",
         "scripts/libreoffice_roundtrip.py"
       ],
-      "exit_code": 0,
+      "exit_code": 2,
       "stderr_tail": "",
-      "stdout_tail": "{\n  \"engine\": \"LibreOffice\",\n  \"files\": {\n    \"InstitutionalPresentation.pptx\": {\n      \"edit\": true,\n      \"error\": null,\n      \"marker_verified\": true,\n      \"open\": true,\n      \"reopen\": true,\n      \"save\": true\n    },\n    \"InstitutionalReport.docx\": {\n      \"edit\": true,\n      \"error\": null,\n      \"marker_verified\": true,\n      \"open\": true,\n      \"reopen\": true,\n      \"save\": true\n    },\n    \"InstitutionalWorkbook.xlsx\": {\n      \"edit\": true,\n      \"error\": null,\n      \"marker_verified\": true,\n      \"open\": true,\n      \"reopen\": true,\n      \"save\": true\n    }\n  },\n  \"pdf_local_open\": {\n    \"error\": null,\n    \"open\": true,\n    \"pages\": 4\n  },\n  \"platform\": \"linux\",\n  \"status\": \"VERIFIED\",\n  \"version\": \"LibreOffice 25.2.3.2 520(Build:2)\"\n}\n",
+      "stdout_tail": "{\"status\": \"UNVERIFIED\", \"reason\": \"pyuno unavailable\"}\n",
       "unexpected_non_loopback": []
     }
   ],
