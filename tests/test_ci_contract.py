@@ -41,7 +41,10 @@ class CiContractTests(unittest.TestCase):
         self.assertIn("        shell: bash", step("Tests (pytest)"))
 
     def test_build_uses_msbuild_warning_gate(self) -> None:
-        self.assertIn("-warnaserror", run_script("Build Windows app (0 warnings gate)"))
+        script = run_script("Build Windows app (0 warnings gate)")
+        self.assertIn("-warnaserror", script)
+        self.assertIn("BUILD_WARNINGS=0", script)
+        self.assertIn("BUILD_ERRORS=0", script)
 
     @unittest.skipUnless(PWSH, "PowerShell is required to execute Windows CI gates")
     def test_build_failure_without_summary_is_not_success(self) -> None:

@@ -58,7 +58,7 @@ The ONLYOFFICE spike is not a hardened production deployment claim. Review the O
 
 ## Verification
 
-`.github/workflows/ci.yml` runs an ordered, measured pipeline. Every job prints a number and derives its exit code from that number. Runtime claims remain narrower than build claims: the user's actual model/GPU path must be exercised before local inference is called runtime-verified.
+`.github/workflows/ci.yml` runs an ordered, measured pipeline. Each gate either derives its exit code from measured counters or propagates the native tool exit code. Successful Windows builds emit `BUILD_WARNINGS=0` and `BUILD_ERRORS=0` only after `-warnaserror` succeeds. Runtime claims remain narrower than build claims: the user's actual model/GPU path must be exercised before local inference is called runtime-verified.
 
 | Job | Gate | Measured line | Exit condition |
 | --- | --- | --- | --- |

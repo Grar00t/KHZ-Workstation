@@ -95,4 +95,4 @@ The repository carries a measured verification layer (`.github/workflows/ci.yml`
 | G8 UI / layout | `scripts/g8_ui_audit.py` | `GATE_G8` (contrast / keyboard / no text in images) |
 | I5 Zero-egress | `scripts/healthcare_zero_egress.py` | `EGRESS` |
 
-Every gate prints a measured number and derives its exit code from that number.
+Each gate reports a measured result or propagates the native tool exit code; successful Windows builds emit zero warning/error markers only after `-warnaserror` succeeds.
