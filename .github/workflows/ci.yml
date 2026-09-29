@@ -141,7 +141,7 @@ jobs:
           done
           echo "ORACLE_PAIRS_AGGREGATE=$total"
           test "$total" -gt 0
-      - name: G1 no-edit engine round-trip (soffice) - PRESERVE_UNKNOWN_XML
+      - name: G1 no-edit engine round-trip (soffice) - STRUCTURE_AND_FORMULAS
         run: |
           set -euo pipefail
           status=0
