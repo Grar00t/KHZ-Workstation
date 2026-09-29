@@ -184,6 +184,61 @@ class MetadataContractTests(unittest.TestCase):
             [row["name"] for row in store.list_data_tables()], ["Legacy"]
         )
 
+    def test_partial_host_contract_is_rebuilt(self) -> None:
+        db = self.tmp / "partial.db"
+        con = sqlite3.connect(db)
+        try:
+            con.executescript(
+                """
+                CREATE TABLE data_catalog(
+                    table_id TEXT PRIMARY KEY NOT NULL,
+                    workspace_id TEXT NOT NULL,
+                    name TEXT NOT NULL CHECK(length(trim(name)) BETWEEN 1 AND 160),
+                    sql_name TEXT NOT NULL UNIQUE CHECK(length(trim(sql_name)) BETWEEN 1 AND 80),
+                    schema_json TEXT NOT NULL,
+                    created_utc TEXT,
+                    UNIQUE(workspace_id, name),
+                    FOREIGN KEY(workspace_id) REFERENCES workspace_identity(workspace_id)
+                );
+                """
+            )
+            con.commit()
+        finally:
+            con.close()
+
+        WorkspaceStore(db, "ws-partial", manifest_schema_version=1, created_utc="2026-01-01T00:00:00Z")
+        upgraded = _table_sql(db, "data_catalog").lower()
+        self.assertIn("on delete cascade", upgraded)
+        self.assertEqual(upgraded.count("not null"), 6)
+
+    def test_invalid_legacy_foreign_key_rolls_back_migration(self) -> None:
+        db = self.tmp / "invalid-foreign.db"
+        con = sqlite3.connect(db)
+        try:
+            con.executescript(_LEGACY_SCRIPT)
+            con.execute(
+                "INSERT INTO data_catalog(" + _CATALOG_COLUMNS + ") VALUES(?,?,?,?,?,?)",
+                ("t-foreign", "ws-foreign", "Foreign", "data_foreign", "[]", "2026-01-01T00:00:00Z"),
+            )
+            con.commit()
+        finally:
+            con.close()
+        before = _table_sql(db, "data_catalog")
+
+        with self.assertRaises(RuntimeError):
+            WorkspaceStore(db, "ws-local", manifest_schema_version=1, created_utc="2026-01-01T00:00:00Z")
+
+        self.assertEqual(_user_version(db), 0)
+        self.assertEqual(_table_sql(db, "data_catalog"), before)
+        self.assertEqual(_table_sql(db, "data_catalog_upgraded"), "")
+        self.assertEqual(_table_sql(db, "workspace_identity"), "")
+        con = sqlite3.connect(db)
+        try:
+            row = con.execute("SELECT workspace_id FROM data_catalog WHERE table_id='t-foreign'").fetchone()
+        finally:
+            con.close()
+        self.assertEqual(row[0], "ws-foreign")
+
     def test_migration_is_idempotent(self) -> None:
         db = self.tmp / "idempotent.db"
         WorkspaceStore(db, "ws-1", manifest_schema_version=1, created_utc="2026-01-01T00:00:00Z")

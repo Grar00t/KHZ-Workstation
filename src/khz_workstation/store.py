@@ -77,11 +77,17 @@ def _like_prefix(prefix: str) -> str:
 
 def _has_host_constraints(sql: str) -> bool:
     normalized = " ".join(sql.split()).lower()
-    return (
-        "check(length(trim(name))" in normalized
-        and "check(length(trim(sql_name))" in normalized
-        and "references workspace_identity" in normalized
+    required = (
+        "table_id text primary key not null",
+        "workspace_id text not null",
+        "name text not null check(length(trim(name)) between 1 and 160)",
+        "sql_name text not null unique check(length(trim(sql_name)) between 1 and 80)",
+        "schema_json text not null",
+        "created_utc text not null",
+        "unique(workspace_id, name)",
+        "foreign key(workspace_id) references workspace_identity(workspace_id) on delete cascade",
     )
+    return all(fragment in normalized for fragment in required)
 
 
 class WorkspaceStore:
@@ -124,6 +130,7 @@ class WorkspaceStore:
         con = sqlite3.connect(self.db_path)
         con.isolation_level = None
         try:
+            con.execute("PRAGMA foreign_keys=ON")
             con.execute("PRAGMA journal_mode=WAL")
             con.execute("PRAGMA synchronous=FULL")
             con.execute("PRAGMA busy_timeout=5000")
@@ -144,19 +151,19 @@ class WorkspaceStore:
                 self._ensure_identity(con)
                 self._ensure_data_catalog(con)
                 con.execute("PRAGMA user_version=" + str(METADATA_SCHEMA_VERSION))
+                if con.execute("PRAGMA foreign_key_check").fetchall():
+                    raise RuntimeError(
+                        "Workspace metadata database failed foreign key validation."
+                    )
+                integrity = con.execute("PRAGMA integrity_check").fetchone()[0]
+                if integrity != "ok":
+                    raise RuntimeError(
+                        "Workspace metadata database integrity check failed: " + str(integrity)
+                    )
                 con.execute("COMMIT")
             except Exception:
                 con.execute("ROLLBACK")
                 raise
-            if con.execute("PRAGMA foreign_key_check").fetchall():
-                raise RuntimeError(
-                    "Workspace metadata database failed foreign key validation."
-                )
-            integrity = con.execute("PRAGMA integrity_check").fetchone()[0]
-            if integrity != "ok":
-                raise RuntimeError(
-                    "Workspace metadata database integrity check failed: " + str(integrity)
-                )
         finally:
             con.close()
 
